@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2º Oficial SJC | Sistema de Gestão de Pagamento de Contas</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./assets/logo-2oficial.png" />
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+              950: '#1e1b4b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="./css/custom.css" />
+</head>
+<body class="bg-emerald-50/60 dark:bg-[#071912] text-slate-800 dark:text-slate-100 min-h-full flex flex-col font-sans antialiased transition-colors">
+
+  <!-- ========================================================================= -->
+  <!-- HEADER / BARRA DE NAVEGAÇÃO SUPERIOR (COMPACTA & FLUIDA)                  -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-[#0c241b]/95 backdrop-blur-md border-b border-emerald-100 dark:border-emerald-900/60 shadow-2xs">
+    <div class="w-full px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14 sm:h-16 gap-3">
+        
+        <!-- Logo Oficial do Cartório (2º Oficial de São José dos Campos) -->
+        <div class="flex items-center gap-3">
+          <a
+            href="#"
+            class="flex items-center transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            title="2º Oficial - Registro de Imóveis, Títulos e Documentos e Civil de Pessoa Jurídica de São José dos Campos"
+          >
+            <img
+              src="./assets/logo-2oficial.png"
+              alt="2º Oficial - Registro de Imóveis, Títulos e Documentos e Civil de Pessoa Jurídica de São José dos Campos"
+              class="h-9 sm:h-11 md:h-12 w-auto max-w-[240px] sm:max-w-[320px] object-contain rounded-md shadow-xs border border-emerald-950/20"
+            />
+          </a>
+        </div>
+
+        <!-- Seletor de Abas (Navegação Central Compacta) -->
+        <nav class="hidden md:flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold">
+          <button
+            type="button"
+            id="tab-btn-contas"
+            class="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs transition-all"
+          >
+            <i data-lucide="table" class="w-3.5 h-3.5"></i>
+            Contas & Lançamentos
+          </button>
+          <button
+            type="button"
+            id="tab-btn-relatorios"
+            class="flex items-center gap-1.5 px-3 py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
+          >
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i>
+            Relatórios & Insights
+          </button>
+        </nav>
+
+        <!-- Ações do Header (Sino, Tema, Botão Nova Conta) -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          
+          <!-- Notificação Bell com Badge e Popover -->
+          <div class="relative">
+            <button
+              type="button"
+              id="btn-notification-bell"
+              class="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Notificações de Contas Urgentes"
+            >
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              <span
+                id="notification-bell-badge"
+                class="hidden absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900 animate-soft-pulse"
+              >
+                0
+              </span>
+            </button>
+
+            <!-- Popover de Notificações -->
+            <div
+              id="notification-popover"
+              class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden"
+            >
+              <div class="p-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                  <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-500"></i>
+                  <span class="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Contas com Urgência</span>
+                </div>
+              </div>
+              <!-- Acesso Rápido ao Lembrete de 2 Dias Úteis -->
+              <button
+                type="button"
+                id="btn-popover-open-daily-alert"
+                class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border-b border-emerald-100 dark:border-emerald-900/60 transition-colors"
+                title="Abrir popup de contas que vencem nos próximos 2 dias úteis"
+              >
+                <div class="flex items-center gap-2">
+                  <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>Lembrete (Vencendo em 2 Dias Úteis)</span>
+                </div>
+                <span id="popover-alert-count-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">0</span>
+              </button>
+              <div id="notification-popover-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <!-- Preenchido dinamicamente via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Botão Modo Escuro / Claro -->
+          <button
+            type="button"
+            id="btn-toggle-theme"
+            class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Alternar Tema (Escuro / Claro)"
+          >
+            <i data-lucide="sun" class="theme-icon-sun w-4 h-4 hidden text-amber-400"></i>
+            <i data-lucide="moon" class="theme-icon-moon w-4 h-4 text-slate-600"></i>
+          </button>
+
+          <!-- Botão Nova Conta (+ Principal) -->
+          <button
+            type="button"
+            id="btn-new-bill"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-all transform active:scale-95"
+          >
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Nova Conta</span>
+            <span class="sm:hidden">Nova</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Abas Mobile (visíveis apenas em telas pequenas) -->
+      <div class="flex md:hidden border-t border-slate-200 dark:border-slate-800 py-1.5 gap-1.5 text-xs font-semibold">
+        <button
+          type="button"
+          id="tab-btn-contas-mobile"
+          onclick="window.App.switchTab('contas')"
+          class="flex-1 py-1 px-2.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-center text-xs"
+        >
+          Contas
+        </button>
+        <button
+          type="button"
+          id="tab-btn-relatorios-mobile"
+          onclick="window.App.switchTab('relatorios')"
+          class="flex-1 py-1 px-2.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-center text-xs"
+        >
+          Relatórios
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- CONTEÚDO PRINCIPAL (LAYOUT EXPANDIDO DE TELA INTEIRA)                         -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8 py-3">
+    <div class="flex flex-col lg:flex-row gap-3 items-start w-full">
+      
+      <!-- ===================================================================== -->
+      <!-- PAINEL LATERAL ESQUERDO: GERENCIAMENTO DE CONTAS A PAGAR & RELATÓRIOS -->
+      <!-- ===================================================================== -->
+      <aside class="w-full lg:w-56 xl:w-60 shrink-0 bg-white dark:bg-slate-900 rounded-xl border border-emerald-100 dark:border-emerald-900/60 shadow-xs p-2.5 space-y-2.5 lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
+
+        <!-- Cabeçalho do Painel Lateral -->
+        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs">
+              <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 leading-none">Gerenciamento</h2>
+              <p class="text-[10px] text-slate-400 leading-none mt-1">Contas & Relatórios</p>
+            </div>
+          </div>
+          <span id="sidebar-total-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            0 contas
+          </span>
+        </div>
+
+        <!-- Botão de Ação Rápida Principal: Nova Despesa -->
+        <button
+          type="button"
+          id="sidebar-btn-new-bill"
+          class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all active:scale-98"
+        >
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>+ Nova Despesa</span>
+        </button>
+
+        <!-- SEÇÃO 1: GERENCIAMENTO DE CONTAS A PAGAR -->
+        <div class="space-y-1">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
+            Contas a Pagar
+          </span>
+          
+          <!-- Todas as Contas -->
+          <button
+            type="button"
+            id="sidebar-nav-all"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 active"
+            data-action="all"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Todas as Contas</span>
+            </div>
+            <span id="sidebar-count-all" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
+          </button>
+
+          <!-- Aguardando Pagamento -->
+          <button
+            type="button"
+            id="sidebar-nav-pending"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            data-action="pending"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Aguardando Pagamento</span>
+            </div>
+            <span id="sidebar-count-pending" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">0</span>
+          </button>
+
+          <!-- Vencidas / Urgentes -->
+          <button
+            type="button"
+            id="sidebar-nav-overdue"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            data-action="overdue"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-rose-500"></i>
+              <span>Vencidas / Urgentes</span>
+            </div>
+            <span id="sidebar-count-overdue" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">0</span>
+          </button>
+
+          <!-- Lembrete (Vencendo em 2 Dias Úteis) -->
+          <button
+            type="button"
+            id="sidebar-nav-due-2days"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            data-action="due-2days"
+            title="Abrir popup com contas que vencem nos próximos 2 dias úteis"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Vencendo em 2 Dias</span>
+            </div>
+            <span id="sidebar-count-due-2days" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">0</span>
+          </button>
+
+          <!-- Contas Pagas / Histórico -->
+          <button
+            type="button"
+            id="sidebar-nav-paid"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            data-action="paid"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>Pagas / Quitações</span>
+            </div>
+            <span id="sidebar-count-paid" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">0</span>
+          </button>
+        </div>
+
+        <!-- SEÇÃO 2: RELATÓRIOS & DEMONSTRATIVO -->
+        <div class="space-y-1 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
+            Relatórios
+          </span>
+
+          <!-- 1. Painel Geral & Gráficos -->
+          <button
+            type="button"
+            id="sidebar-report-overview"
+            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            data-report="overview"
+            title="Gráficos analíticos, balanço e cronograma"
+          >
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-500"></i>
+            <span>Painel de Gráficos & Relatórios</span>
+          </button>
+
+          <!-- 2. Demonstrativo Executivo -->
+          <button
+            type="button"
+            id="sidebar-report-statement"
+            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            data-report="statement"
+            title="Extrato executivo completo para impressão ou cópia"
+          >
+            <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-600"></i>
+            <span>Demonstrativo Executivo</span>
+          </button>
+        </div>
+
+        <!-- SEÇÃO 3: FERRAMENTAS & EXPORTAÇÕES -->
+        <div class="space-y-1 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
+            Exportação & Ações
+          </span>
+
+          <!-- Baixar Planilha CSV -->
+          <button
+            type="button"
+            id="sidebar-action-csv"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>Baixar Planilha (CSV)</span>
+          </button>
+
+          <!-- Copiar Resumo -->
+          <button
+            type="button"
+            id="sidebar-action-copy"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <i data-lucide="clipboard-copy" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>Copiar Resumo (WhatsApp)</span>
+          </button>
+
+          <!-- Imprimir Relatório -->
+          <button
+            type="button"
+            id="sidebar-action-print"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
+            <span>Imprimir Relatório (A4)</span>
+          </button>
+
+          <!-- Limpar Todas as Despesas -->
+          <button
+            type="button"
+            id="sidebar-action-clear-all"
+            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+            title="Remove todas as contas e despesas cadastradas"
+          >
+            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+            <span>Limpar Todas as Despesas</span>
+          </button>
+        </div>
+
+        <!-- Mini Widget Informativo no Rodapé da Sidebar -->
+        <div class="p-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-900/60 text-xs">
+          <div class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+            Total a Pagar (Pendente)
+          </div>
+          <div id="sidebar-pending-total" class="text-base font-extrabold text-emerald-950 dark:text-emerald-100 tabular-nums mt-0.5">
+            R$ 0,00
+          </div>
+          <div class="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+            Calculado automaticamente
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ===================================================================== -->
+      <!-- ÁREA CENTRAL DE CONTEÚDO (DASHBOARD, TABELA, RELATÓRIOS)              -->
+      <!-- ===================================================================== -->
+      <div class="flex-1 min-w-0 w-full space-y-2.5">
+
+    <!-- 1. SELETOR DE MÊS DE REFERÊNCIA (Substitui o alerta de atenção) -->
+    <div
+      id="month-selector-bar"
+      class="py-2 px-3 sm:px-4 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200/90 dark:border-emerald-900/60 shadow-xs flex flex-wrap items-center justify-between gap-2.5 text-xs animate-modal-in"
+    >
+      <!-- Lado Esquerdo: Identificação & Navegação por Mês -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400 tracking-wider">
+            Mês de Referência das Despesas
+          </span>
+          <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <!-- Botão Mês Anterior -->
+            <button
+              type="button"
+              id="btn-prev-month"
+              class="p-1 rounded-md text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700"
+              title="Ir para o Mês Anterior"
+            >
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Dropdown Seletor de Mês -->
+            <select
+              id="select-month"
+              class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 cursor-pointer focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="0">Janeiro</option>
+              <option value="1">Fevereiro</option>
+              <option value="2">Março</option>
+              <option value="3">Abril</option>
+              <option value="4">Maio</option>
+              <option value="5">Junho</option>
+              <option value="6">Julho</option>
+              <option value="7">Agosto</option>
+              <option value="8">Setembro</option>
+              <option value="9">Outubro</option>
+              <option value="10">Novembro</option>
+              <option value="11">Dezembro</option>
+            </select>
+
+            <!-- Dropdown Seletor de Ano -->
+            <select
+              id="select-year"
+              class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 cursor-pointer focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+            </select>
+
+            <!-- Botão Próximo Mês -->
+            <button
+              type="button"
+              id="btn-next-month"
+              class="p-1 rounded-md text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700"
+              title="Ir para o Próximo Mês"
+            >
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Botão Atalho: Mês Atual -->
+            <button
+              type="button"
+              id="btn-current-month"
+              class="ml-1 px-2.5 py-1 rounded-md text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 transition-all hover:scale-105 active:scale-95"
+              title="Voltar para o Mês Atual"
+            >
+              Hoje / Mês Atual
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lado Direito: Resumo Dinâmico do Mês Selecionado -->
+      <div class="flex items-center gap-3 ml-auto">
+        <div class="text-right">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block" id="month-summary-label">
+            Total do Mês Selecionado
+          </span>
+          <span class="text-sm sm:text-base font-extrabold text-emerald-900 dark:text-emerald-200 tabular-nums" id="month-summary-total">
+            R$ 0,00
+          </span>
+        </div>
+        <span id="month-summary-count" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          0 contas
+        </span>
+      </div>
+    </div>
+
+    <!-- 2. SELETOR DE PERÍODO & CONTROLE SUPERIOR (COMPACTO) -->
+    <div class="flex flex-wrap items-center justify-between gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs text-xs">
+      <div class="flex items-center gap-1 overflow-x-auto font-semibold">
+        <span class="text-slate-400 uppercase tracking-wider text-[10px] pr-1.5 font-bold hidden sm:inline">Período:</span>
+        <button
+          type="button"
+          data-period="hoje"
+          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+        >
+          Hoje
+        </button>
+        <button
+          type="button"
+          data-period="semana"
+          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+        >
+          Esta Semana
+        </button>
+        <button
+          type="button"
+          data-period="mes"
+          id="btn-period-month"
+          class="btn-period-filter px-2.5 py-1 rounded-md bg-emerald-600 text-white shadow-xs transition-all whitespace-nowrap"
+        >
+          Mês Selecionado
+        </button>
+        <button
+          type="button"
+          data-period="todos"
+          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+        >
+          Todos
+        </button>
+        <button
+          type="button"
+          data-period="personalizado"
+          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
+        >
+          Personalizado
+        </button>
+      </div>
+
+      <!-- Filtro de Datas Personalizadas -->
+      <div id="custom-date-container" class="hidden flex items-center gap-1.5 text-xs">
+        <input
+          type="date"
+          id="custom-date-start"
+          class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200 focus-ring"
+        />
+        <span class="text-slate-400 text-xs">até</span>
+        <input
+          type="date"
+          id="custom-date-end"
+          class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200 focus-ring"
+        />
+      </div>
+
+      <!-- Botão Rápido de Demonstração / Reset -->
+      <div class="flex items-center gap-1.5 ml-auto">
+        <button
+          type="button"
+          id="btn-reset-demo"
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-medium transition-all"
+          title="Recarrega dados de teste dinâmicos para hoje"
+        >
+          <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+          <span>Recarregar Demo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. DASHBOARD / RESUMO FINANCEIRO (KPIS COMPACTOS + BARRA INTEGRADA) -->
+    <section class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        
+        <!-- KPI 1: Total a Pagar / Pendente -->
+        <div class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <span>A Pagar</span>
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
+          </div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums mt-0.5" id="kpi-total-pending">
+            R$ 0,00
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+            <span class="px-1.5 py-0.5 rounded font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300" id="kpi-pending-count">
+              0 pendentes
+            </span>
+            <span class="text-slate-400">no período</span>
+          </div>
+        </div>
+
+        <!-- KPI 2: Total Quitado -->
+        <div class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <span>Total Quitado</span>
+            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+          </div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums mt-0.5" id="kpi-total-paid">
+            R$ 0,00
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+            <span class="px-1.5 py-0.5 rounded font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" id="kpi-paid-percentage">
+              0% quitado
+            </span>
+            <span class="text-slate-400">compromissos</span>
+          </div>
+        </div>
+
+        <!-- KPI 3: Total do Período -->
+        <div class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <span>Total Período</span>
+            <i data-lucide="wallet" class="w-3.5 h-3.5 text-indigo-500"></i>
+          </div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums mt-0.5" id="kpi-total-amount">
+            R$ 0,00
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+            <span class="px-1.5 py-0.5 rounded font-semibold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300" id="kpi-total-count">
+              0 contas
+            </span>
+            <span class="text-slate-400">cadastradas</span>
+          </div>
+        </div>
+
+        <!-- KPI 4: Atrasadas Crítico -->
+        <div id="kpi-overdue-card" class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-rose-200/80 dark:border-rose-900/60">
+          <div class="flex items-center justify-between text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+            <span>Atrasadas</span>
+            <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-rose-500"></i>
+          </div>
+          <div class="text-lg sm:text-xl font-extrabold text-rose-600 dark:text-rose-400 tabular-nums mt-0.5" id="kpi-overdue-total">
+            R$ 0,00
+          </div>
+          <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
+            <span class="px-1.5 py-0.5 rounded font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800" id="kpi-overdue-count">
+              0 atrasadas
+            </span>
+            <span class="text-rose-500/80 font-medium">Requer atenção</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso Integrada (Compacta) -->
+      <div class="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+        <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+          <span class="font-semibold text-slate-700 dark:text-slate-300">Balanço de Pagamentos</span>
+          <span class="font-medium" id="kpi-progress-label">0% pago (R$ 0,00 de R$ 0,00)</span>
+        </div>
+        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div
+            id="kpi-progress-bar"
+            class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-700"
+            style="width: 0%"
+          ></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 1: CONTAS & LANÇAMENTOS (TABELA & FILTROS)                           -->
+    <!-- ======================================================================= -->
+    <div id="view-contas" class="space-y-2.5">
+      
+      <!-- Barra de Filtros, Pesquisa e Ações Compacta -->
+      <div class="bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
+        
+        <!-- Linha 1: Filtro de Status + Filtro de Local (LD, REC, SE) + Ações de Exportação -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+          
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Filtro por Status do Pagamento (Pills Compactos) -->
+            <div class="flex items-center gap-1 overflow-x-auto text-xs font-semibold">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1">Status:</span>
+              <button
+                type="button"
+                data-status="todos"
+                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30 transition-all whitespace-nowrap"
+              >
+                Todas
+              </button>
+              <button
+                type="button"
+                data-status="pendente"
+                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
+              >
+                Aguardando Pagamento
+              </button>
+              <button
+                type="button"
+                data-status="pago"
+                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
+              >
+                Pagas
+              </button>
+              <button
+                type="button"
+                data-status="atrasado"
+                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
+              >
+                Atrasadas
+              </button>
+            </div>
+
+            <!-- Separador Vertical -->
+            <div class="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+
+            <!-- Filtro por Local (LD, REC, SE) -->
+            <div class="flex items-center gap-1 overflow-x-auto text-xs font-semibold">
+              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1">Local:</span>
+              <button
+                type="button"
+                data-location="todos"
+                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30 transition-all whitespace-nowrap"
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                data-location="LD"
+                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
+              >
+                LD
+              </button>
+              <button
+                type="button"
+                data-location="REC"
+                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
+              >
+                REC
+              </button>
+              <button
+                type="button"
+                data-location="SE"
+                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
+              >
+                SE
+              </button>
+            </div>
+          </div>
+
+          <!-- Botões de Exportação e Relatório Rápido -->
+          <div class="flex items-center gap-1.5 ml-auto">
+            <button
+              type="button"
+              id="btn-copy-summary"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
+              title="Copia resumo em texto para WhatsApp / E-mail"
+            >
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Copiar Resumo</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-export-csv"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
+              title="Baixar planilha CSV compatível com Excel"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Exportar CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Linha 2: Busca por Texto e Dropdowns de Filtro (Status, Local LD/REC/SE e Ordenação) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 text-xs">
+          
+          <!-- Input de Busca -->
+          <div class="lg:col-span-5 relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Buscar por descrição, anotação ou valor..."
+              class="w-full pl-8 pr-7 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus-ring"
+            />
+            <button
+              type="button"
+              id="btn-clear-search"
+              class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Filtro de Status do Pagamento (Dropdown) -->
+          <div class="lg:col-span-3">
+            <select
+              id="filter-status-select"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-semibold focus-ring"
+              title="Filtrar por Status do Pagamento"
+            >
+              <option value="todos">Status: Todos</option>
+              <option value="pendente">Status: Aguardando Pagamento</option>
+              <option value="pago">Status: Pago</option>
+              <option value="atrasado">Status: Atrasado</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Local (LD, REC, SE) (Dropdown) -->
+          <div class="lg:col-span-2">
+            <select
+              id="filter-location-select"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-bold focus-ring"
+              title="Filtrar por Local (LD, REC, SE)"
+            >
+              <option value="todos">Local: Todos</option>
+              <option value="LD">🏢 Local: LD</option>
+              <option value="REC">📑 Local: REC</option>
+              <option value="SE">🏛️ Local: SE</option>
+            </select>
+          </div>
+
+          <!-- Ordenação -->
+          <div class="lg:col-span-2">
+            <select
+              id="sort-by"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 focus-ring font-medium"
+            >
+              <option value="dueDate_asc">Vencimento (Próximo)</option>
+              <option value="dueDate_desc">Vencimento (Distante)</option>
+              <option value="amount_desc">Maior Valor (R$)</option>
+              <option value="amount_asc">Menor Valor (R$)</option>
+              <option value="description_asc">Descrição (A-Z)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Contas (Desktop) & Cards (Mobile) -->
+      <section id="bills-table-section" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        
+        <!-- Cabeçalho da Listagem Compacto -->
+        <div class="py-2.5 px-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-slate-900 dark:text-slate-100">Lançamentos Cadastrados</h3>
+            <span id="bills-results-count" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+              0 contas
+            </span>
+          </div>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">
+            Altere o <span class="font-bold text-slate-600 dark:text-slate-300">Status</span> na lista suspensa (Pago / Aguardando) ou informe a data de quitação
+          </span>
+        </div>
+
+        <!-- Tabela Compacta para Telas Médias e Grandes -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-50/80 dark:bg-slate-800/60 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+              <tr>
+                <th class="py-2.5 px-1.5 w-16 text-center whitespace-nowrap">LOCAL</th>
+                <th class="col-description py-2.5 px-3">Descrição & Observações</th>
+                <th class="py-2.5 px-2 w-28 text-center whitespace-nowrap">Nota Fiscal/Doc</th>
+                <th class="py-2.5 px-1.5 w-14 text-center whitespace-nowrap">F/V</th>
+                <th class="py-2.5 px-2 w-28 whitespace-nowrap">Categoria</th>
+                <th class="py-2.5 px-2 w-28 whitespace-nowrap">Vencimento</th>
+                <th class="py-2.5 px-2 w-32 text-center whitespace-nowrap">Data de Pagamento</th>
+                <th class="py-2.5 px-2 w-36 whitespace-nowrap">Status</th>
+                <th class="py-2.5 px-2 w-24 text-right whitespace-nowrap">Valor</th>
+                <th class="py-2.5 px-2 w-24 text-right whitespace-nowrap">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="bills-table-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+              <!-- Linhas preenchidas via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Cards para Telas Mobile -->
+        <div id="bills-mobile-cards" class="md:hidden p-3 space-y-3">
+          <!-- Cards preenchidos via JavaScript -->
+        </div>
+
+        <!-- Estado Vazio (Empty State) -->
+        <div id="bills-empty-state" class="hidden py-16 px-4 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <i data-lucide="inbox" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-base font-bold text-slate-800 dark:text-slate-200">Nenhuma conta encontrada</h4>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            Não existem lançamentos para os filtros selecionados ou a busca não retornou resultados.
+          </p>
+          <button
+            type="button"
+            id="btn-clear-all-filters"
+            class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all"
+          >
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            Limpar Filtros
+          </button>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 2: RELATÓRIOS & INSIGHTS (COMPACTO)                                  -->
+    <!-- ======================================================================= -->
+    <div id="view-relatorios" class="hidden space-y-3">
+      
+      <!-- Linha de Gráficos -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        
+        <!-- Gráfico 1: Despesas por Categoria (Donut) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Despesas por Categoria</h3>
+              <p class="text-[11px] text-slate-400">Distribuição percentual dos seus gastos</p>
+            </div>
+            <div class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+              <i data-lucide="pie-chart" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="relative flex-1 min-h-[220px] chart-container flex items-center justify-center">
+            <canvas id="chart-categories"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 2: Balanço de Status (Pagas vs Pendentes vs Atrasadas) -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Balanço de Pagamentos</h3>
+              <p class="text-[11px] text-slate-400">Comparativo entre pagas, pendentes e atrasadas</p>
+            </div>
+            <div class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+              <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="relative flex-1 min-h-[220px] chart-container flex items-center justify-center">
+            <canvas id="chart-status"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalhamento em Barras e Tabela de Categorias -->
+      <div id="report-category-list-section" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Detalhamento por Categoria</h3>
+            <p class="text-[11px] text-slate-400">Valores totais e participação relativa em cada área</p>
+          </div>
+          <button
+            type="button"
+            id="btn-export-csv-report"
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
+          >
+            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
+            Baixar CSV
+          </button>
+        </div>
+
+        <div id="report-category-list" class="space-y-2.5">
+          <!-- Inserido dinamicamente via JS -->
+        </div>
+      </div>
+
+      <!-- Relatório 3: Cronograma Mensal de Vencimentos -->
+      <div id="report-monthly-section" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Cronograma Mensal de Vencimentos</h3>
+            <p class="text-[11px] text-slate-400">Total de compromissos distribuídos mês a mês com percentual quitado</p>
+          </div>
+          <div class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
+            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div id="report-monthly-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+      </div>
+
+      <!-- Relatório 4: Ranking das Maiores Despesas (Top 5 Contas) -->
+      <div id="report-top-bills-section" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Top 5 Maiores Despesas</h3>
+            <p class="text-[11px] text-slate-400">Lançamentos de maior peso no orçamento para monitoramento estratégico</p>
+          </div>
+          <div class="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+            <i data-lucide="award" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div id="report-top-bills-list" class="space-y-2">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+      </div>
+
+    </div>
+
+      </div> <!-- fim da div central -->
+    </div> <!-- fim da flex row que engloba a aside e o conteúdo central -->
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER COMPACTO                                                           -->
+  <!-- ========================================================================= -->
+  <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 text-[11px] text-slate-400">
+    <div class="w-full px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+        <span>Dados salvos localmente com segurança (LocalStorage). Pronto para Supabase ou Firebase.</span>
+      </div>
+      <div>
+        <span>2º Oficial de São José dos Campos &copy; 2026 • Painel de Gestão Financeira</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: LEMBRETE DIÁRIO DE CONTAS A VENCER (2 DIAS ÚTEIS DE ANTECEDÊNCIA)  -->
+  <!-- ========================================================================= -->
+  <div
+    id="daily-alert-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 modal-backdrop overflow-y-auto"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900/60 animate-modal-in overflow-hidden my-4 sm:my-8 flex flex-col max-h-[92vh]">
+      
+      <!-- Cabeçalho do Modal com Banner Chamativo -->
+      <div class="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0 shadow-xs">
+            <i data-lucide="bell-ring" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-extrabold text-base sm:text-lg text-white leading-tight">
+                Lembrete Diário de Vencimentos
+              </h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider">
+                1º Acesso do Dia
+              </span>
+            </div>
+            <p class="text-xs text-emerald-100 mt-0.5" id="daily-alert-subtitle">
+              Contas com vencimento em até 2 dias úteis de antecedência
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-daily-alert"
+          class="p-2 text-emerald-100 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+          title="Fechar Lembrete"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Resumo Financeiro do Alerta no Topo -->
+      <div class="p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border-b border-emerald-100 dark:border-emerald-900/60 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-emerald-700 dark:text-emerald-400"></i>
+          <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200" id="daily-alert-today-label">
+            Hoje: Carregando data...
+          </span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Total a Pagar (Próx. 2 Dias Úteis)</span>
+            <span class="text-sm sm:text-base font-extrabold text-emerald-950 dark:text-emerald-100 tabular-nums" id="daily-alert-total-amount">
+              R$ 0,00
+            </span>
+          </div>
+          <span id="daily-alert-count-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+            0 contas
+          </span>
+        </div>
+      </div>
+
+      <!-- Aviso se houver contas já vencidas -->
+      <div id="daily-alert-overdue-banner" class="hidden mx-4 mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300">
+          <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-600 shrink-0"></i>
+          <span id="daily-alert-overdue-text">Você também possui contas atrasadas pendentes.</span>
+        </div>
+        <button
+          type="button"
+          id="btn-daily-alert-show-overdue"
+          class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline whitespace-nowrap"
+        >
+          Filtrar atrasadas &rarr;
+        </button>
+      </div>
+
+      <!-- Corpo com Lista de Contas com Rolagem -->
+      <div class="p-4 overflow-y-auto flex-1 space-y-2.5" id="daily-alert-list">
+        <!-- Itens preenchidos dinamicamente via JS -->
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-center sm:text-left flex-wrap">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+          <span>Exibido automaticamente no 1º acesso de cada dia.</span>
+          <button
+            type="button"
+            id="btn-reset-daily-alert-seen"
+            class="underline text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 cursor-pointer ml-1 font-semibold"
+            title="Permite que o popup abra novamente na próxima inicialização hoje"
+          >
+            (Simular 1º acesso)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            id="btn-daily-alert-filter-table"
+            class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-800 text-xs font-bold transition-all"
+          >
+            Ver Todas na Tabela
+          </button>
+          <button
+            type="button"
+            id="btn-confirm-daily-alert"
+            class="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95"
+          >
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Entendido / Fechar</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DEMONSTRATIVO EXECUTIVO (RELATÓRIO COMPLETO PARA IMPRESSÃO/CÓPIA)  -->
+  <!-- ========================================================================= -->
+  <div
+    id="statement-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 modal-backdrop overflow-y-auto"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-modal-in overflow-hidden my-6 flex flex-col max-h-[90vh]">
+      
+      <!-- Cabeçalho -->
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">
+              Demonstrativo Executivo de Contas a Pagar
+            </h3>
+            <p class="text-[10px] text-slate-400">Resumo consolidado para análise e prestação de contas</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-statement-modal"
+          class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo do Demonstrativo (Injetado via JS) -->
+      <div id="statement-modal-body" class="p-5 overflow-y-auto flex-1">
+        <!-- Renderizado dinamicamente -->
+      </div>
+
+      <!-- Rodapé de Ações do Modal -->
+      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between gap-2">
+        <span class="text-[11px] text-slate-400">Pronto para impressão ou exportação</span>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="btn-print-statement"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
+          >
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Imprimir (A4)</span>
+          </button>
+          <button
+            type="button"
+            id="btn-copy-statement"
+            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+          >
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copiar Relatório</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CADASTRO / EDIÇÃO DE CONTA (CRUD)                                  -->
+  <!-- ========================================================================= -->
+  <div
+    id="bill-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 modal-backdrop overflow-y-auto"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-modal-in overflow-hidden my-8">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+        <div class="flex items-center gap-2">
+          <div class="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
+            <i data-lucide="file-plus" class="w-5 h-5"></i>
+          </div>
+          <h3 id="modal-title" class="font-bold text-slate-900 dark:text-white text-base">
+            Nova Conta / Despesa
+          </h3>
+        </div>
+        <button
+          type="button"
+          id="btn-close-modal"
+          class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Formulário do Modal -->
+      <form id="bill-form" class="p-6 space-y-4">
+        <input type="hidden" id="bill-id" />
+
+        <!-- Descrição -->
+        <div>
+          <label for="bill-description" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            Descrição da Conta *
+          </label>
+          <input
+            type="text"
+            id="bill-description"
+            required
+            placeholder="ex: Energia Elétrica, Internet Fibra, Fornecedor X..."
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus-ring"
+          />
+        </div>
+
+        <!-- Valor R$ e Data de Vencimento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="bill-amount" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Valor (R$) *
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">R$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                id="bill-amount"
+                required
+                placeholder="0,00"
+                class="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring tabular-nums font-semibold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="bill-due-date" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Data de Vencimento *
+            </label>
+            <input
+              type="date"
+              id="bill-due-date"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-medium"
+            />
+          </div>
+        </div>
+
+        <!-- Nota Fiscal e Número do Documento (NF / Doc) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="bill-invoice-number" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Número da Nota Fiscal (NF)</span>
+            </label>
+            <input
+              type="text"
+              id="bill-invoice-number"
+              placeholder="Ex: 10452, 001/2026"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-medium placeholder-slate-400"
+            />
+          </div>
+
+          <div>
+            <label for="bill-document-number" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="hash" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span>Número do Documento</span>
+            </label>
+            <input
+              type="text"
+              id="bill-document-number"
+              placeholder="Ex: DOC-8891, Fatura 44"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-medium placeholder-slate-400"
+            />
+          </div>
+        </div>
+
+        <!-- Tipo de Despesa e Local -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="bill-expense-type" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="pin" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Tipo de Despesa *</span>
+            </label>
+            <select
+              id="bill-expense-type"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-semibold"
+            >
+              <option value="fixa">📌 Fixa (F)</option>
+              <option value="variavel">🔄 Variável (V)</option>
+            </select>
+            <span class="text-[11px] text-slate-400 mt-1 block">Classificação de custo: F (Fixa) ou V (Variável)</span>
+          </div>
+
+          <div>
+            <label for="bill-location" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Local *</span>
+            </label>
+            <select
+              id="bill-location"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-bold"
+            >
+              <option value="LD">LD</option>
+              <option value="REC">REC</option>
+              <option value="SE">SE</option>
+            </select>
+            <span class="text-[11px] text-slate-400 mt-1 block">Unidade / Filial de referência</span>
+          </div>
+        </div>
+
+        <!-- Categoria e Método de Pagamento -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="bill-category" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="tag" class="w-3.5 h-3.5 text-teal-600"></i>
+              <span>Categoria</span>
+            </label>
+            <select
+              id="bill-category"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring"
+            >
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+
+          <div>
+            <label for="bill-payment-method" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="credit-card" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span>Método de Pagamento</span>
+            </label>
+            <select
+              id="bill-payment-method"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring"
+            >
+              <!-- Preenchido dinamicamente -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Status e Data de Pagamento (Ambos Editáveis) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="bill-status" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+              Status da Despesa
+            </label>
+            <select
+              id="bill-status"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-medium"
+            >
+              <option value="pendente">Aguardando Pagamento</option>
+              <option value="pago">Pago</option>
+            </select>
+            <span class="text-[11px] text-slate-400 mt-1 block">Ao marcar como Pago, defina a data de quitação</span>
+          </div>
+
+          <div id="payment-date-group">
+            <label for="bill-payment-date" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Data de Pagamento</span>
+              <span class="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 font-semibold">(Editável)</span>
+            </label>
+            <input
+              type="date"
+              id="bill-payment-date"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus-ring font-medium"
+            />
+            <span class="text-[11px] text-slate-400 mt-1 block">Deixe em branco se a despesa ainda estiver pendente</span>
+          </div>
+        </div>
+
+        <!-- Observações / Anotações -->
+        <div>
+          <label for="bill-notes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            Observações / Código PIX / Link de Boleto (Opcional)
+          </label>
+          <textarea
+            id="bill-notes"
+            rows="2"
+            placeholder="Anotações adicionais, código de barras, número da NF ou instruções..."
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus-ring"
+          ></textarea>
+        </div>
+
+        <!-- Botões de Ação do Modal -->
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            id="btn-cancel-modal"
+            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            id="btn-submit-bill"
+            class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/20 transition-all flex items-center gap-2"
+          >
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span id="btn-submit-bill-text">Salvar Lançamento</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL RÁPIDO: ADICIONAR / EDITAR NOTA FISCAL E DOCUMENTO                  -->
+  <!-- ========================================================================= -->
+  <div
+    id="quick-nf-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 animate-modal-in space-y-4">
+      
+      <!-- Cabeçalho -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white leading-tight">Nota Fiscal & Documento</h4>
+            <p id="quick-nf-bill-title" class="text-[11px] text-slate-500 truncate max-w-[240px]">Despesa</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-quick-nf"
+          class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Formulário -->
+      <form id="quick-nf-form" class="space-y-3.5">
+        <input type="hidden" id="quick-nf-bill-id" value="" />
+
+        <div>
+          <label for="quick-nf-input" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+            <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">NF</span>
+            <span>Número da Nota Fiscal</span>
+          </label>
+          <input
+            type="text"
+            id="quick-nf-input"
+            placeholder="Ex: 10452, 001/2026"
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white font-medium focus-ring placeholder-slate-400"
+          />
+        </div>
+
+        <div>
+          <label for="quick-doc-input" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+            <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">Doc</span>
+            <span>Número do Documento / Fatura</span>
+          </label>
+          <input
+            type="text"
+            id="quick-doc-input"
+            placeholder="Ex: DOC-8891, FAT-600"
+            class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white font-medium focus-ring placeholder-slate-400"
+          />
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            id="btn-clear-quick-nf"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+          >
+            Limpar
+          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="btn-cancel-quick-nf"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-xs transition-colors flex items-center gap-1.5"
+            >
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span>Salvar</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO                                            -->
+  <!-- ========================================================================= -->
+  <div
+    id="delete-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-modal-in space-y-4">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </div>
+      <div class="text-center">
+        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Excluir Conta?</h4>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Tem certeza de que deseja remover <strong id="delete-bill-description" class="text-slate-800 dark:text-slate-200"></strong> no valor de <strong id="delete-bill-amount" class="text-slate-800 dark:text-slate-200"></strong>? Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button
+          type="button"
+          id="btn-cancel-delete"
+          class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          id="btn-confirm-delete"
+          class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-md shadow-rose-500/20 transition-all"
+        >
+          Sim, Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER DE NOTIFICAÇÕES TOAST (FLUTUANTE)                               -->
+  <!-- ========================================================================= -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPTS DA APLICAÇÃO (CARREGADOS NA ORDEM DE DEPENDÊNCIA)                 -->
+  <!-- ========================================================================= -->
+  <script src="./js/config.js"></script>
+  <script src="./js/mockData.js"></script>
+  <script src="./js/storage.js"></script>
+  <script src="./js/billService.js"></script>
+  <script src="./js/chartService.js"></script>
+  <script src="./js/exportService.js"></script>
+  <script src="./js/ui.js"></script>
+  <script src="./js/app.js"></script>
+
+</body>
+</html>
