@@ -40,6 +40,7 @@ aside,
 .bg-white,
 .dark .bg-slate-900,
 #bills-table-section,
+#report-annual-chart-section,
 #view-relatorios > div > div {
   background-color: #f5fcf8 !important;
   border-color: #bce7ce !important;
@@ -137,9 +138,9 @@ textarea:focus,
 button.border-slate-200,
 button.border-slate-700,
 #btn-copy-summary,
+#btn-export-pdf,
 #btn-export-csv,
 #btn-export-csv-report,
-#btn-reset-demo,
 #btn-clear-all-filters {
   background-color: #e2f4e8 !important;
   border-color: #b7e5cb !important;
@@ -148,8 +149,8 @@ button.border-slate-700,
 
 button.border-slate-200:hover,
 #btn-copy-summary:hover,
-#btn-export-csv:hover,
-#btn-reset-demo:hover {
+#btn-export-pdf:hover,
+#btn-export-csv:hover {
   background-color: #d1eedc !important;
   color: #064e3b !important;
 }
@@ -694,18 +695,66 @@ table tbody tr td {
   color: #ecfdf5;
 }
 
-/* Estilos de Impressão Limpa */
+/* Estilos de Impressão Limpa e Profissional */
 @media print {
-  aside,
-  header,
-  footer,
-  #urgency-alert-banner,
-  #month-selector-bar,
-  #daily-alert-modal,
-  .toolbar-filters,
-  button,
-  .btn-open-calendar-picker,
-  .btn-clear-payment-date {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Quando o Demonstrativo / PDF do Mês estiver aberto, imprime exclusivamente o documento */
+  body.modal-open-statement > *:not(#statement-modal) {
+    display: none !important;
+  }
+
+  body.modal-open-statement #statement-modal {
+    display: block !important;
+    position: static !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body.modal-open-statement #statement-modal > div {
+    box-shadow: none !important;
+    border: none !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.modal-open-statement #statement-modal-body,
+  body.modal-open-statement #statement-modal-body .overflow-y-auto,
+  body.modal-open-statement #statement-modal-body [class*="max-h-"] {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  body.modal-open-statement #btn-close-statement-modal,
+  body.modal-open-statement #statement-modal-footer,
+  body.modal-open-statement #statement-modal button {
+    display: none !important;
+  }
+
+  /* Impressão normal fora do modal */
+  body:not(.modal-open-statement) aside,
+  body:not(.modal-open-statement) header,
+  body:not(.modal-open-statement) footer,
+  body:not(.modal-open-statement) #urgency-alert-banner,
+  body:not(.modal-open-statement) #month-selector-bar,
+  body:not(.modal-open-statement) #daily-alert-modal,
+  body:not(.modal-open-statement) .toolbar-filters,
+  body:not(.modal-open-statement) button,
+  body:not(.modal-open-statement) .btn-open-calendar-picker,
+  body:not(.modal-open-statement) .btn-clear-payment-date {
     display: none !important;
   }
   

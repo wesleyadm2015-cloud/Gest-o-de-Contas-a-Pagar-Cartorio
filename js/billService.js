@@ -67,11 +67,22 @@
         const expenseType = b.expenseType || (b.category === 'fixas' ? 'fixa' : 'variavel');
         const isFixed = expenseType === 'fixa';
 
+        // Busca dados específicos gravados para o mês selecionado (isolamento por mês)
+        const monthOverride = (b.monthlyOverrides && b.monthlyOverrides[targetMonthKey]) ||
+                              (b.monthlyStatus && b.monthlyStatus[targetMonthKey]) ||
+                              null;
+
         let dueDate = b.dueDate;
+        let amount = Number(b.amount) || 0;
+        let description = b.description || '';
         let status = b.status || 'pendente';
         let paymentDate = b.paymentDate || null;
         let invoiceNumber = b.invoiceNumber || '';
         let documentNumber = b.documentNumber || '';
+        let location = b.location === 'CG' ? 'LD' : (b.location || 'LD');
+        let category = b.category || 'outros';
+        let paymentMethod = b.paymentMethod || 'pix';
+        let notes = b.notes || '';
 
         // Origem do lançamento para determinar o mês de partida da despesa fixa
         const origDueDate = b.launchDueDate || b.dueDate;
@@ -93,31 +104,35 @@
         // Todas as despesas fixas constam em todos os meses seguintes ao lançamento dela.
         // NÃO incluir em meses anteriores.
         // NÃO incluir daquele mês para frente se foi excluída/encerrada em determinado mês.
-        // Status padrão de "Aguardando Pagamento" (pendente) e vencimento no dia estipulado do mês.
+        // ISOLAMENTO TOTAL: Alterações feitas em um mês pertencem exclusivamente àquele mês
+        // e não alteram as informações dos meses anteriores e nem dos meses seguintes.
         // =========================================================================
         if (isFixed && b.dueDate) {
           if (!isPriorToLaunch && !isExcludedFromMonth) {
-            const stipulatedDay = Number(b.dueDay) || parseInt(b.dueDate.split('-')[2], 10) || 1;
+            const stipulatedDay = Number(monthOverride?.dueDay) || Number(b.dueDay) || parseInt(b.dueDate.split('-')[2], 10) || 1;
             const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
             const effectiveDay = Math.min(stipulatedDay, daysInMonth);
             dueDate = `${targetYear}-${pad(targetMonth + 1)}-${pad(effectiveDay)}`;
 
-            // Verifica se para esse mês específico já houve registro de pagamento ou quitação
-            if (b.monthlyStatus && b.monthlyStatus[targetMonthKey]) {
-              status = b.monthlyStatus[targetMonthKey].status || 'pendente';
-              paymentDate = b.monthlyStatus[targetMonthKey].paymentDate || null;
-              if (b.monthlyStatus[targetMonthKey].invoiceNumber !== undefined) {
-                invoiceNumber = b.monthlyStatus[targetMonthKey].invoiceNumber;
-              }
-              if (b.monthlyStatus[targetMonthKey].documentNumber !== undefined) {
-                documentNumber = b.monthlyStatus[targetMonthKey].documentNumber;
-              }
+            if (monthOverride) {
+              // Aplica os valores isolados deste mês específico
+              if (monthOverride.amount !== undefined) amount = Number(monthOverride.amount);
+              if (monthOverride.description !== undefined) description = monthOverride.description;
+              if (monthOverride.status !== undefined) status = monthOverride.status;
+              if (monthOverride.paymentDate !== undefined) paymentDate = monthOverride.paymentDate;
+              if (monthOverride.invoiceNumber !== undefined) invoiceNumber = monthOverride.invoiceNumber;
+              if (monthOverride.documentNumber !== undefined) documentNumber = monthOverride.documentNumber;
+              if (monthOverride.location !== undefined) location = monthOverride.location === 'CG' ? 'LD' : monthOverride.location;
+              if (monthOverride.category !== undefined) category = monthOverride.category;
+              if (monthOverride.paymentMethod !== undefined) paymentMethod = monthOverride.paymentMethod;
+              if (monthOverride.notes !== undefined) notes = monthOverride.notes;
+              if (monthOverride.dueDate) dueDate = monthOverride.dueDate;
             } else if (origDueDate && origDueDate.startsWith(targetMonthKey)) {
-              // Mês original em que a despesa foi cadastrada
+              // Mês original em que a despesa foi cadastrada (se não houver override)
               status = b.status || 'pendente';
               paymentDate = b.paymentDate || null;
             } else {
-              // Em qualquer mês subsequente: status padrão "aguardando pagamento" e data pendente
+              // Em qualquer mês subsequente sem alteração: status padrão "aguardando pagamento" e data pendente
               status = 'pendente';
               paymentDate = null;
             }
@@ -126,11 +141,10 @@
 
         const effectiveStatus = this.computeStatus({ dueDate, status, paymentDate });
         const relativeDate = window.AppConfig.utils.getRelativeDateInfo(dueDate, effectiveStatus);
-        const categoryMeta = window.AppConfig.CATEGORIES[b.category] || window.AppConfig.CATEGORIES.outros;
-        const paymentMeta = window.AppConfig.PAYMENT_METHODS[b.paymentMethod] || window.AppConfig.PAYMENT_METHODS.pix;
+        const categoryMeta = window.AppConfig.CATEGORIES[category] || window.AppConfig.CATEGORIES.outros;
+        const paymentMeta = window.AppConfig.PAYMENT_METHODS[paymentMethod] || window.AppConfig.PAYMENT_METHODS.pix;
         const statusMeta = window.AppConfig.STATUSES[effectiveStatus] || window.AppConfig.STATUSES.pendente;
-        const rawLoc = b.location || 'LD';
-        const location = rawLoc === 'CG' ? 'LD' : rawLoc;
+        const locationVal = location === 'CG' ? 'LD' : location;
         const invoiceStatus = (invoiceNumber || documentNumber) ? 'recebida' : (b.invoiceStatus || 'aguardando');
         const invoiceMeta = (window.AppConfig.INVOICE_STATUSES && window.AppConfig.INVOICE_STATUSES[invoiceStatus]) || { id: 'aguardando', label: 'Aguardando' };
         const expenseTypeMeta = (window.AppConfig.EXPENSE_TYPES && window.AppConfig.EXPENSE_TYPES[expenseType]) || {
@@ -146,12 +160,17 @@
 
         return {
           ...b,
+          amount,
+          description,
           dueDate,
           status,
           paymentDate,
           invoiceNumber,
           documentNumber,
-          location,
+          location: locationVal,
+          category,
+          paymentMethod,
+          notes,
           expenseType,
           expenseTypeMeta,
           effectiveStatus,
@@ -455,6 +474,69 @@
     }
 
     /**
+     * Calcula indicadores financeiros e KPIs a partir de uma lista pré-filtrada de contas
+     * Garante que relatórios e exportações reflitam estritamente as contas filtradas
+     * @param {Array<Object>} bills Lista de contas (já filtradas)
+     * @returns {Object}
+     */
+    calculateKPIsFromList(bills = []) {
+      let totalAmount = 0;
+      let totalPaid = 0;
+      let paidCount = 0;
+      let totalPending = 0;
+      let pendingCount = 0;
+      let totalFixed = 0;
+      let totalVariable = 0;
+      let fixedCount = 0;
+      let variableCount = 0;
+      let overdueCount = 0;
+      let overdueTotal = 0;
+
+      bills.forEach((b) => {
+        const amt = Number(b.amount) || 0;
+        totalAmount += amt;
+
+        if (b.expenseType === 'fixa') {
+          totalFixed += amt;
+          fixedCount++;
+        } else {
+          totalVariable += amt;
+          variableCount++;
+        }
+
+        if (b.effectiveStatus === 'pago') {
+          totalPaid += amt;
+          paidCount++;
+        } else {
+          totalPending += amt;
+          pendingCount++;
+          if (b.effectiveStatus === 'atrasado') {
+            overdueCount++;
+            overdueTotal += amt;
+          }
+        }
+      });
+
+      const paidPercentage = totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0;
+
+      return {
+        totalBillsCount: bills.length,
+        totalAmount,
+        totalPaid,
+        paidCount,
+        totalPending,
+        pendingCount,
+        totalFixed,
+        totalVariable,
+        fixedCount,
+        variableCount,
+        paidPercentage: Number(paidPercentage.toFixed(1)),
+        overdueCount,
+        overdueTotal
+      };
+    }
+
+    /**
      * Retorna o agrupamento de despesas por categoria
      * @param {Array<Object>} bills
      * @returns {Array<Object>}
@@ -522,11 +604,12 @@
      * Retorna agrupamento mensal de contas (Cronograma Mensal de Vencimentos)
      * Inclui todas as despesas fixas recorrentes em todos os meses
      * @param {Array<Object>} bills
+     * @param {number|null} targetYear Ano de referência (padrão: ano vigente)
      * @returns {Array<Object>}
      */
-    getMonthlyBreakdown(bills) {
+    getMonthlyBreakdown(bills, targetYear = null) {
       const today = this.getTodayNormalized();
-      const currentYear = today.getFullYear();
+      const currentYear = targetYear !== null && !isNaN(targetYear) ? Number(targetYear) : today.getFullYear();
       const months = {};
       const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -537,12 +620,17 @@
           key,
           label: `${monthNames[m]} de ${currentYear}`,
           shortLabel: `${monthNames[m].substring(0, 3)}/${String(currentYear).substring(2)}`,
+          shortName: monthNames[m].substring(0, 3),
+          monthName: monthNames[m],
           year: currentYear,
           month: m + 1,
+          monthIndex: m,
           total: 0,
           paid: 0,
           pending: 0,
-          count: 0
+          count: 0,
+          paidCount: 0,
+          pendingCount: 0
         };
 
         const monthBills = this.getMonthBills(bills, currentYear, m);
@@ -551,8 +639,10 @@
           months[key].count++;
           if (b.effectiveStatus === 'pago') {
             months[key].paid += b.amount;
+            months[key].paidCount++;
           } else {
             months[key].pending += b.amount;
+            months[key].pendingCount++;
           }
         });
       }

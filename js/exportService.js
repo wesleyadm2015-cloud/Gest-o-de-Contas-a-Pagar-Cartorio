@@ -167,6 +167,31 @@
         return false;
       }
     }
+
+    /**
+     * Exporta as despesas de um mês selecionado para planilha Excel (.csv formatado para Excel em português)
+     * @param {Array<Object>} bills Todas as contas cadastradas
+     * @param {number} year Ano
+     * @param {number} monthIndex Mês (0 a 11)
+     * @param {string} monthLabel Rótulo amigável (ex: 'Novembro de 2026')
+     */
+    exportMonthToExcel(bills, year, monthIndex, monthLabel) {
+      const monthBills = window.BillService.getMonthBills(bills, year, monthIndex);
+      if (!monthBills || monthBills.length === 0) {
+        window.UIManager.showToast(`Não há despesas cadastradas para o mês de ${monthLabel}.`, 'info');
+        return;
+      }
+
+      const cleanMonth = (monthLabel || `mes_${monthIndex + 1}_${year}`)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '_');
+      const filename = `despesas_pagas_${cleanMonth}.csv`;
+
+      this.exportToCSV(monthBills, filename);
+      window.UIManager.showToast(`Planilha Excel de ${monthLabel} exportada com sucesso!`, 'success');
+    }
   }
 
   window.ExportService = new ExportService();

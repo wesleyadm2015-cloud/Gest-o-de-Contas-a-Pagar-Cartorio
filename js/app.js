@@ -26,16 +26,147 @@
         selectedMonth: now.getMonth()
       };
       this.activeTab = 'contas'; // 'contas' | 'relatorios'
+      this.activeSidebarId = 'sidebar-nav-all';
     }
 
     /**
-     * Inicializa a aplicação
+     * Inicializa a aplicação restaurando o estado e tela anteriores
      */
     async init() {
+      this.loadSavedState();
       window.UIManager.init();
       window.UIManager.populateSelectOptions();
       this.bindEvents();
+      this.restoreUIState();
       await this.loadData(true);
+    }
+
+    /**
+     * Salva o estado atual da tela (aba ativa, mês, ano, filtros e botão da sidebar)
+     * Garante que ao atualizar a página, o sistema se mantenha na tela/mês atual
+     */
+    saveCurrentState() {
+      try {
+        const state = {
+          activeTab: this.activeTab,
+          activeFilters: this.activeFilters,
+          activeSidebarId: this.activeSidebarId || null
+        };
+        localStorage.setItem('contadiaria_view_state_v1', JSON.stringify(state));
+      } catch (err) {
+        console.warn('Erro ao salvar estado da tela:', err);
+      }
+    }
+
+    /**
+     * Carrega o estado salvo previamente no LocalStorage
+     */
+    loadSavedState() {
+      try {
+        const raw = localStorage.getItem('contadiaria_view_state_v1');
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        if (state) {
+          if (state.activeTab && ['contas', 'relatorios'].includes(state.activeTab)) {
+            this.activeTab = state.activeTab;
+          }
+          if (state.activeFilters && typeof state.activeFilters === 'object') {
+            this.activeFilters = {
+              ...this.activeFilters,
+              ...state.activeFilters
+            };
+            if (this.activeFilters.selectedMonth !== undefined) {
+              this.activeFilters.selectedMonth = Number(this.activeFilters.selectedMonth);
+            }
+            if (this.activeFilters.selectedYear !== undefined) {
+              this.activeFilters.selectedYear = Number(this.activeFilters.selectedYear);
+            }
+          }
+          if (state.activeSidebarId) {
+            this.activeSidebarId = state.activeSidebarId;
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar estado salvo da tela:', err);
+      }
+    }
+
+    /**
+     * Aplica o estado salvo aos componentes visuais da interface (DOM)
+     */
+    restoreUIState() {
+      // 1. Restaura a visualização da tela atual (Contas vs Relatórios)
+      this.switchTab(this.activeTab);
+
+      // 2. Restaura valores dos dropdowns e inputs da barra de filtros
+      const selectMonth = document.getElementById('select-month');
+      if (selectMonth && this.activeFilters.selectedMonth !== undefined) {
+        selectMonth.value = String(this.activeFilters.selectedMonth);
+      }
+
+      const selectYear = document.getElementById('select-year');
+      if (selectYear && this.activeFilters.selectedYear !== undefined) {
+        selectYear.value = String(this.activeFilters.selectedYear);
+      }
+
+      const filterStatusSelect = document.getElementById('filter-status-select');
+      if (filterStatusSelect && this.activeFilters.status) {
+        filterStatusSelect.value = this.activeFilters.status;
+      }
+
+      const filterLocSelect = document.getElementById('filter-location-select');
+      if (filterLocSelect && this.activeFilters.location) {
+        filterLocSelect.value = this.activeFilters.location;
+      }
+
+      const sortBy = document.getElementById('sort-by');
+      if (sortBy && this.activeFilters.sortBy) {
+        sortBy.value = this.activeFilters.sortBy;
+      }
+
+      const searchInput = document.getElementById('search-input');
+      if (searchInput && this.activeFilters.search) {
+        searchInput.value = this.activeFilters.search;
+        const clearBtn = document.getElementById('btn-clear-search');
+        if (clearBtn) clearBtn.classList.remove('hidden');
+      }
+
+      // 3. Restaura os botões de período (Hoje, Esta Semana, Mês Selecionado, Todos, Personalizado)
+      if (this.activeFilters.period) {
+        document.querySelectorAll('.btn-period-filter').forEach((btn) => {
+          const isSelected = btn.dataset.period === this.activeFilters.period;
+          btn.classList.toggle('bg-emerald-600', isSelected);
+          btn.classList.toggle('text-white', isSelected);
+          btn.classList.toggle('shadow-xs', isSelected);
+          btn.classList.toggle('text-slate-600', !isSelected);
+          btn.classList.toggle('dark:text-slate-400', !isSelected);
+        });
+
+        const customDateInputs = document.getElementById('custom-date-container');
+        if (customDateInputs) {
+          if (this.activeFilters.period === 'personalizado') {
+            customDateInputs.classList.remove('hidden');
+          } else {
+            customDateInputs.classList.add('hidden');
+          }
+        }
+      }
+
+      if (this.activeFilters.customStart) {
+        const inputStart = document.getElementById('custom-date-start');
+        if (inputStart) inputStart.value = this.activeFilters.customStart;
+      }
+      if (this.activeFilters.customEnd) {
+        const inputEnd = document.getElementById('custom-date-end');
+        if (inputEnd) inputEnd.value = this.activeFilters.customEnd;
+      }
+
+      // 4. Restaura o botão ativo da Sidebar
+      if (this.activeSidebarId) {
+        document.querySelectorAll('.sidebar-nav-item').forEach((btn) => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(this.activeSidebarId);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
     }
 
     /**
@@ -60,6 +191,9 @@
      * toda vez que a página for atualizada / recarregada
      */
     checkDailyAlertPopup() {
+      // Se o usuário estiver na tela de relatórios, não sobrepõe com o popup de contas diárias
+      if (this.activeTab !== 'contas') return;
+
       const upcomingBills = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
       const overdueBills = window.BillService.getOverdueBills(this.allBills);
 
@@ -105,19 +239,16 @@
       window.UIManager.renderUrgencyBanner(kpis);
       window.UIManager.renderBillsList(this.filteredBills);
 
-      // 5. Atualiza Relatórios e Gráficos
-      const categoryData = window.BillService.getCategoryBreakdown(this.filteredBills.length > 0 ? this.filteredBills : this.allBills);
-      window.UIManager.renderCategoryReport(categoryData);
-
-      if (window.ChartService) {
-        window.ChartService.renderCategoryChart('chart-categories', categoryData);
-        window.ChartService.renderStatusChart('chart-status', kpis);
-      }
-
-      // 6. Atualiza dados da Sidebar Lateral Esquerda e Relatórios Adicionais
-      window.UIManager.updateSidebarBadges(this.allBills);
-      window.UIManager.renderMonthlyReport(window.BillService.getMonthlyBreakdown(this.allBills));
+      // 5. Atualiza Relatórios, Gráfico de Colunas Anual (12 Meses), Tabela de Mês Selecionado e Cards
+      const currentYear = this.activeFilters.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : new Date().getFullYear();
+      const monthlyData = window.BillService.getMonthlyBreakdown(this.allBills, currentYear);
+      window.UIManager.renderAnnualChart(monthlyData, currentYear);
+      window.UIManager.renderMonthlyReport(monthlyData);
       window.UIManager.renderTopBillsReport(window.BillService.getTopBills(this.allBills, 5));
+      this.updateReportSelectedMonthView();
+
+      // 6. Atualiza dados da Sidebar Lateral Esquerda
+      window.UIManager.updateSidebarBadges(this.allBills);
 
       // 7. Atualiza popover de notificações
       this.renderNotificationPopover();
@@ -126,6 +257,9 @@
       if (window.lucide) {
         window.lucide.createIcons();
       }
+
+      // 9. Persiste o estado da tela, filtros, mês e ano para manter após recarregar a página
+      this.saveCurrentState();
     }
 
     /**
@@ -141,27 +275,45 @@
       const viewRelatorios = document.getElementById('view-relatorios');
 
       if (tabName === 'contas') {
-        tabContasBtn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
-        tabContasBtn.classList.remove('text-slate-500', 'dark:text-slate-400');
+        if (tabContasBtn) {
+          tabContasBtn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          tabContasBtn.classList.remove('text-slate-500', 'dark:text-slate-400');
+        }
 
-        tabRelatoriosBtn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
-        tabRelatoriosBtn.classList.add('text-slate-500', 'dark:text-slate-400');
+        if (tabRelatoriosBtn) {
+          tabRelatoriosBtn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          tabRelatoriosBtn.classList.add('text-slate-500', 'dark:text-slate-400');
+        }
 
-        viewContas.classList.remove('hidden');
-        viewRelatorios.classList.add('hidden');
+        if (viewContas) viewContas.classList.remove('hidden');
+        if (viewRelatorios) viewRelatorios.classList.add('hidden');
+
+        if (this.activeSidebarId === 'sidebar-report-overview') {
+          this.activeSidebarId = 'sidebar-nav-all';
+        }
       } else {
-        tabRelatoriosBtn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
-        tabRelatoriosBtn.classList.remove('text-slate-500', 'dark:text-slate-400');
+        if (tabRelatoriosBtn) {
+          tabRelatoriosBtn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          tabRelatoriosBtn.classList.remove('text-slate-500', 'dark:text-slate-400');
+        }
 
-        tabContasBtn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
-        tabContasBtn.classList.add('text-slate-500', 'dark:text-slate-400');
+        if (tabContasBtn) {
+          tabContasBtn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-900', 'dark:text-white', 'shadow-sm');
+          tabContasBtn.classList.add('text-slate-500', 'dark:text-slate-400');
+        }
 
-        viewContas.classList.add('hidden');
-        viewRelatorios.classList.remove('hidden');
+        if (viewContas) viewContas.classList.add('hidden');
+        if (viewRelatorios) viewRelatorios.classList.remove('hidden');
 
-        // Atualiza relatórios analíticos extras
-        window.UIManager.renderMonthlyReport(window.BillService.getMonthlyBreakdown(this.allBills));
+        this.activeSidebarId = 'sidebar-report-overview';
+
+        // Atualiza relatórios analíticos extras, gráfico de colunas de 12 meses e tabela do mês selecionado
+        const currentYear = this.activeFilters.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : new Date().getFullYear();
+        const monthlyData = window.BillService.getMonthlyBreakdown(this.allBills, currentYear);
+        window.UIManager.renderAnnualChart(monthlyData, currentYear);
+        window.UIManager.renderMonthlyReport(monthlyData);
         window.UIManager.renderTopBillsReport(window.BillService.getTopBills(this.allBills, 5));
+        this.updateReportSelectedMonthView();
 
         // Atualiza tamanho dos gráficos
         setTimeout(() => {
@@ -170,6 +322,16 @@
           }
         }, 50);
       }
+
+      // Atualiza o destaque do botão ativo na Sidebar
+      if (this.activeSidebarId) {
+        document.querySelectorAll('.sidebar-nav-item').forEach((btn) => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(this.activeSidebarId);
+        if (activeBtn) activeBtn.classList.add('active');
+      }
+
+      // Persiste a aba atual no LocalStorage
+      this.saveCurrentState();
     }
 
     /**
@@ -361,7 +523,13 @@
         document.querySelectorAll('.sidebar-nav-item').forEach((btn) => {
           btn.classList.remove('active');
         });
-        if (activeBtn) activeBtn.classList.add('active');
+        if (activeBtn) {
+          activeBtn.classList.add('active');
+          if (activeBtn.id !== 'sidebar-report-statement' && !activeBtn.id.startsWith('sidebar-action-')) {
+            this.activeSidebarId = activeBtn.id;
+          }
+        }
+        this.saveCurrentState();
       };
 
       // 1. Botão + Nova Despesa na Sidebar
@@ -535,14 +703,104 @@
       document.getElementById('btn-print-statement')?.addEventListener('click', () => {
         window.print();
       });
+      document.getElementById('btn-export-statement-excel')?.addEventListener('click', () => {
+        const stmtData = window.UIManager.currentStatementData;
+        if (stmtData && stmtData.options && stmtData.options.isMonthReport) {
+          window.ExportService.exportMonthToExcel(
+            this.allBills,
+            stmtData.options.year,
+            stmtData.options.monthIndex,
+            stmtData.options.monthLabel
+          );
+        } else {
+          window.ExportService.exportToCSV(this.allBills);
+        }
+      });
       document.getElementById('btn-copy-statement')?.addEventListener('click', async () => {
-        const kpis = window.BillService.calculateKPIs(this.allBills, 'todos');
-        const text = window.ExportService.generateTextSummary(kpis, this.allBills);
+        const stmtData = window.UIManager.currentStatementData;
+        const billsToCopy = stmtData?.bills || this.allBills;
+        const kpis = stmtData?.kpis || window.BillService.calculateKPIs(this.allBills, 'todos');
+        const text = window.ExportService.generateTextSummary(kpis, billsToCopy);
         const ok = await window.ExportService.copyToClipboard(text);
         if (ok) {
           window.UIManager.showToast('Demonstrativo copiado para a área de transferência!', 'success');
         } else {
           window.UIManager.showToast('Erro ao copiar demonstrativo.', 'error');
+        }
+      });
+
+      // =========================================================================
+      // EVENTOS DO RELATÓRIO DE DESPESAS PAGAS POR MÊS (PDF & EXCEL)
+      // =========================================================================
+      const getSelectedReportMonthInfo = () => {
+        const select = document.getElementById('select-report-month');
+        if (!select || !select.value) {
+          const now = new Date();
+          return {
+            year: now.getFullYear(),
+            monthIndex: now.getMonth(),
+            monthLabel: window.AppConfig.MONTH_NAMES[now.getMonth()] + ' de ' + now.getFullYear()
+          };
+        }
+        const [yearStr, monthStr] = select.value.split('-');
+        const year = parseInt(yearStr, 10);
+        const monthIndex = parseInt(monthStr, 10);
+        const monthLabel = select.options[select.selectedIndex]?.textContent || `${window.AppConfig.MONTH_NAMES[monthIndex]} de ${year}`;
+        return { year, monthIndex, monthLabel };
+      };
+
+      // 1. Botão do Topo: Gerar PDF do Mês Selecionado
+      document.getElementById('btn-export-selected-month-pdf')?.addEventListener('click', () => {
+        const { year, monthIndex, monthLabel } = getSelectedReportMonthInfo();
+        this.handleMonthPDF(year, monthIndex, monthLabel);
+      });
+
+      // 2. Botão do Topo: Gerar Excel do Mês Selecionado
+      document.getElementById('btn-export-selected-month-excel')?.addEventListener('click', () => {
+        const { year, monthIndex, monthLabel } = getSelectedReportMonthInfo();
+        this.handleMonthExcel(year, monthIndex, monthLabel);
+      });
+
+      // 3. Seleção do Mês no Relatório: Atualiza a tabela com todas as despesas daquele mês (Somente Visualização)
+      document.getElementById('select-report-month')?.addEventListener('change', () => {
+        this.updateReportSelectedMonthView();
+      });
+
+      // 4. Botões nos Cards Mensais (Delegação de Eventos para Ver Contas, PDF e Excel em cada um dos 12 cards)
+      document.getElementById('report-monthly-grid')?.addEventListener('click', (e) => {
+        const viewBtn = e.target.closest('.btn-month-card-view');
+        const pdfBtn = e.target.closest('.btn-month-card-pdf');
+        const excelBtn = e.target.closest('.btn-month-card-excel');
+
+        if (viewBtn) {
+          e.stopPropagation();
+          const year = parseInt(viewBtn.dataset.year, 10);
+          const monthIndex = parseInt(viewBtn.dataset.month, 10);
+          const select = document.getElementById('select-report-month');
+          if (select) {
+            select.value = `${year}-${monthIndex}`;
+          }
+          this.updateReportSelectedMonthView();
+          document.getElementById('report-selected-month-container')?.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+
+        if (pdfBtn) {
+          e.stopPropagation();
+          const year = parseInt(pdfBtn.dataset.year, 10);
+          const monthIndex = parseInt(pdfBtn.dataset.month, 10);
+          const monthLabel = pdfBtn.dataset.label;
+          this.handleMonthPDF(year, monthIndex, monthLabel);
+          return;
+        }
+
+        if (excelBtn) {
+          e.stopPropagation();
+          const year = parseInt(excelBtn.dataset.year, 10);
+          const monthIndex = parseInt(excelBtn.dataset.month, 10);
+          const monthLabel = excelBtn.dataset.label;
+          this.handleMonthExcel(year, monthIndex, monthLabel);
+          return;
         }
       });
 
@@ -675,13 +933,6 @@
         openDailyAlertHelper();
       });
 
-      // Botão na Sidebar
-      document.getElementById('sidebar-nav-due-2days')?.addEventListener('click', (e) => {
-        document.querySelectorAll('.sidebar-nav-item').forEach((b) => b.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        openDailyAlertHelper();
-      });
-
       // Botão Filtrar na Tabela a partir do Modal
       document.getElementById('btn-daily-alert-filter-table')?.addEventListener('click', () => {
         window.UIManager.closeDailyAlertModal();
@@ -739,9 +990,11 @@
         if (!bill) return;
 
         const todayISO = window.AppConfig.utils.toISODateString();
+        const monthKey = bill.dueDate ? bill.dueDate.substring(0, 7) : todayISO.substring(0, 7);
         await window.StorageService.update(billId, {
           status: 'pago',
-          paymentDate: todayISO
+          paymentDate: todayISO,
+          monthKey
         });
 
         window.UIManager.showToast(`Conta "${bill.description}" quitada com sucesso!`, 'success');
@@ -1123,18 +1376,39 @@
         });
       }
 
-      // Exportação CSV
+      // Exportação CSV (Contas Filtradas na Tela)
       document.getElementById('btn-export-csv')?.addEventListener('click', () => {
-        window.ExportService.exportToCSV(this.filteredBills);
-        window.UIManager.showToast('Arquivo CSV baixado com sucesso!', 'success');
+        const bills = this.filteredBills || [];
+        if (bills.length === 0) {
+          window.UIManager.showToast('Nenhuma despesa encontrada com os filtros atuais para exportar.', 'warning');
+          return;
+        }
+        const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
+        const pad = (n) => String(n).padStart(2, '0');
+        const monthIndex = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
+        const monthKey = `${year}-${pad(monthIndex + 1)}`;
+        const filename = `despesas_filtradas_${monthKey}.csv`;
+
+        window.ExportService.exportToCSV(bills, filename);
+        window.UIManager.showToast(`Planilha CSV exportada com ${bills.length} conta(s) filtrada(s)!`, 'success');
       });
 
       document.getElementById('btn-export-csv-report')?.addEventListener('click', () => {
-        window.ExportService.exportToCSV(this.filteredBills);
+        const bills = this.filteredBills || [];
+        if (bills.length === 0) {
+          window.UIManager.showToast('Nenhuma despesa para exportar.', 'warning');
+          return;
+        }
+        window.ExportService.exportToCSV(bills);
         window.UIManager.showToast('Arquivo CSV baixado com sucesso!', 'success');
       });
 
-      // Copiar Resumo Formatado
+      // 1. Exportar PDF das Contas Atualmente Filtradas
+      document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+        this.handleExportCurrentPDF();
+      });
+
+      // 2. Copiar Resumo Formatado (Compatibilidade)
       document.getElementById('btn-copy-summary')?.addEventListener('click', async () => {
         const kpis = window.BillService.calculateKPIs(
           this.allBills,
@@ -1217,7 +1491,10 @@
       const pad = (n) => String(n).padStart(2, '0');
       const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
       const month = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
-      const monthKey = `${year}-${pad(month + 1)}`;
+      const currentMonthKey = `${year}-${pad(month + 1)}`;
+
+      const modalMonthKey = document.getElementById('bill-month-key')?.value;
+      const monthKey = modalMonthKey || (dueDate && dueDate.includes('-') ? dueDate.substring(0, 7) : currentMonthKey);
 
       const startMonthKey = dueDate && dueDate.includes('-') ? dueDate.substring(0, 7) : monthKey;
 
@@ -1365,8 +1642,11 @@
       const bill = this.allBills.find((b) => b.id === id);
       if (!bill) return;
 
+      const pad = (n) => String(n).padStart(2, '0');
+      const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
+
       try {
-        await window.StorageService.update(id, { location: newLocation });
+        await window.StorageService.update(id, { location: newLocation, monthKey });
         window.UIManager.showToast(`Local de "${bill.description}" definido para ${newLocation}!`, 'success');
         await this.loadData();
       } catch (err) {
@@ -1432,12 +1712,29 @@
 
     /**
      * Abre modal de edição para uma conta existente
+     * Enriquece os dados especificamente para o mês de referência selecionado
      * @param {string} id
      */
     async handleEditBill(id) {
-      const bill = await window.StorageService.getById(id);
-      if (bill) {
-        window.UIManager.openBillModal('edit', bill);
+      const curYear = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
+      const curMonth = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
+      const pad = (n) => String(n).padStart(2, '0');
+      const targetMonthKey = `${curYear}-${pad(curMonth + 1)}`;
+
+      const rawBill = await window.StorageService.getById(id);
+      if (!rawBill) return;
+
+      const [enrichedBill] = window.BillService.enrichBills([rawBill], {
+        targetYear: curYear,
+        targetMonth: curMonth
+      });
+
+      if (enrichedBill) {
+        window.UIManager.openBillModal('edit', enrichedBill, {
+          monthKey: targetMonthKey,
+          targetYear: curYear,
+          targetMonth: curMonth
+        });
       }
     }
 
@@ -1495,6 +1792,107 @@
         console.error('Falha ao excluir conta:', err);
         window.UIManager.showToast('Erro ao excluir conta.', 'error');
       }
+    }
+
+    /**
+     * Gera relatório e visualização PDF de um mês selecionado
+     * @param {number} year Ano
+     * @param {number} monthIndex Mês (0 a 11)
+     * @param {string} monthLabel Rótulo amigável (ex: 'Novembro de 2026')
+     */
+    handleMonthPDF(year, monthIndex, monthLabel) {
+      const monthBills = window.BillService.getMonthBills(this.allBills, year, monthIndex);
+      const kpis = window.BillService.calculateKPIs(this.allBills, 'mes', 8000, year, monthIndex);
+      window.UIManager.openStatementModal(monthBills, kpis, {
+        isMonthReport: true,
+        monthLabel: monthLabel,
+        year: year,
+        monthIndex: monthIndex
+      });
+    }
+
+    /**
+     * Exporta as contas atualmente filtradas / visualizadas na tabela para PDF (A4)
+     * Garante que SEMPRE sejam exportadas as informações exatamente como estão filtradas na tela
+     */
+    handleExportCurrentPDF() {
+      const bills = this.filteredBills || [];
+
+      if (bills.length === 0) {
+        window.UIManager.showToast('Nenhuma despesa encontrada com os filtros atuais para exportar.', 'warning');
+        return;
+      }
+
+      const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
+      const monthIndex = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
+      const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[monthIndex])
+        ? `${window.AppConfig.MONTH_NAMES[monthIndex]} de ${year}`
+        : `Mês de Referência (${year})`;
+
+      // Indicadores calculados EXATAMENTE sobre a lista de contas filtradas
+      const kpis = window.BillService.calculateKPIsFromList(bills);
+
+      // Descreve os filtros aplicados para constar no cabeçalho do documento PDF
+      const filterBadges = [];
+      if (this.activeFilters.status !== 'todos') {
+        const statusMap = { pago: 'Pagas', pendente: 'Aguardando Pagamento', atrasado: 'Atrasadas' };
+        filterBadges.push(statusMap[this.activeFilters.status] || this.activeFilters.status);
+      }
+      if (this.activeFilters.location !== 'todos') {
+        filterBadges.push(`Local ${this.activeFilters.location}`);
+      }
+      if (this.activeFilters.expenseType !== 'todos') {
+        filterBadges.push(this.activeFilters.expenseType === 'fixa' ? 'Fixas' : 'Variáveis');
+      }
+      if (this.activeFilters.search) {
+        filterBadges.push(`Busca: "${this.activeFilters.search}"`);
+      }
+
+      const subtitle = filterBadges.length > 0
+        ? `${monthName} • Filtro: ${filterBadges.join(' | ')} (${bills.length} contas)`
+        : `${monthName} (${bills.length} contas filtradas)`;
+
+      window.UIManager.openStatementModal(bills, kpis, {
+        isMonthReport: true,
+        monthLabel: subtitle,
+        year: year,
+        monthIndex: monthIndex
+      });
+    }
+
+    /**
+     * Exporta os lançamentos do mês selecionado diretamente para arquivo Excel
+     * @param {number} year Ano
+     * @param {number} monthIndex Mês (0 a 11)
+     * @param {string} monthLabel Rótulo amigável (ex: 'Novembro de 2026')
+     */
+    handleMonthExcel(year, monthIndex, monthLabel) {
+      window.ExportService.exportMonthToExcel(this.allBills, year, monthIndex, monthLabel);
+    }
+
+    /**
+     * Atualiza a tabela de despesas em modo SOMENTE VISUALIZAÇÃO do mês selecionado em view-relatorios
+     * Traz todas as despesas daquele mês de modo que o usuário consiga apenas visualizar, sem fazer alterações
+     */
+    updateReportSelectedMonthView() {
+      const select = document.getElementById('select-report-month');
+      if (!select) return;
+
+      let year, monthIndex, monthLabel;
+      if (select.value) {
+        const [yearStr, monthStr] = select.value.split('-');
+        year = parseInt(yearStr, 10);
+        monthIndex = parseInt(monthStr, 10);
+        monthLabel = select.options[select.selectedIndex]?.textContent || `${window.AppConfig.MONTH_NAMES[monthIndex]} de ${year}`;
+      } else {
+        const now = new Date();
+        year = this.activeFilters?.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : now.getFullYear();
+        monthIndex = this.activeFilters?.selectedMonth !== undefined ? Number(this.activeFilters.selectedMonth) : now.getMonth();
+        monthLabel = `${window.AppConfig.MONTH_NAMES[monthIndex]} de ${year}`;
+      }
+
+      const monthBills = window.BillService.getMonthBills(this.allBills, year, monthIndex);
+      window.UIManager.renderSelectedMonthBills(monthBills, year, monthIndex, monthLabel);
     }
 
     /**

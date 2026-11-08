@@ -102,17 +102,17 @@
     renderKPIs(kpis) {
       const format = window.AppConfig.utils.formatBRL;
 
-      // Card Total a Pagar / Pendente
+      // Card Total Aguardando Pagamento
       const elPending = document.getElementById('kpi-total-pending');
       const elPendingCount = document.getElementById('kpi-pending-count');
       if (elPending) elPending.textContent = format(kpis.totalPending);
-      if (elPendingCount) elPendingCount.textContent = `${kpis.pendingCount} pendentes`;
+      if (elPendingCount) elPendingCount.textContent = `${kpis.pendingCount} aguardando`;
 
       // Card Total Pago
       const elPaid = document.getElementById('kpi-total-paid');
       const elPaidPct = document.getElementById('kpi-paid-percentage');
       if (elPaid) elPaid.textContent = format(kpis.totalPaid);
-      if (elPaidPct) elPaidPct.textContent = `${kpis.paidPercentage}% quitado`;
+      if (elPaidPct) elPaidPct.textContent = `${kpis.paidPercentage}% pago`;
 
       // Card Total Geral / Comprometido
       const elTotal = document.getElementById('kpi-total-amount');
@@ -803,6 +803,100 @@
     }
 
     /**
+     * Renderiza a apresentação anual de despesas e valores pagos no período de 12 meses
+     * Atualiza os KPIs anuais consolidados, a tabela resumo e o gráfico de colunas
+     * @param {Array<Object>} monthlyData Dados dos 12 meses
+     * @param {number} targetYear Ano vigente de referência
+     */
+    renderAnnualChart(monthlyData, targetYear) {
+      if (!monthlyData || monthlyData.length === 0) return;
+
+      const format = window.AppConfig.utils.formatBRL;
+      const totalExpenses = monthlyData.reduce((acc, m) => acc + (m.total || 0), 0);
+      const totalPaid = monthlyData.reduce((acc, m) => acc + (m.paid || 0), 0);
+      const totalPending = monthlyData.reduce((acc, m) => acc + (m.pending || 0), 0);
+      const totalBillsCount = monthlyData.reduce((acc, m) => acc + (m.count || 0), 0);
+      const totalPendingCount = monthlyData.reduce((acc, m) => acc + (m.pendingCount || 0), 0);
+      const paidPct = totalExpenses > 0 ? ((totalPaid / totalExpenses) * 100).toFixed(1) : 0;
+
+      // 1. Atualiza Badge do Exercício
+      const yearBadge = document.getElementById('annual-chart-year-badge');
+      if (yearBadge) {
+        yearBadge.innerHTML = `
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Exercício ${targetYear} (12 Meses)</span>
+        `;
+      }
+
+      // 2. Atualiza Cards de Indicadores Anuais
+      const elExpenses = document.getElementById('annual-kpi-total-expenses');
+      const elCount = document.getElementById('annual-kpi-total-count');
+      const elPaid = document.getElementById('annual-kpi-total-paid');
+      const elPaidPct = document.getElementById('annual-kpi-paid-percentage');
+      const elPending = document.getElementById('annual-kpi-total-pending');
+      const elPendingCount = document.getElementById('annual-kpi-pending-count');
+
+      if (elExpenses) elExpenses.textContent = format(totalExpenses);
+      if (elCount) elCount.textContent = `${totalBillsCount} conta${totalBillsCount === 1 ? '' : 's'} no ano`;
+      if (elPaid) elPaid.textContent = format(totalPaid);
+      if (elPaidPct) elPaidPct.textContent = `${paidPct}% quitado no ano`;
+      if (elPending) elPending.textContent = format(totalPending);
+      if (elPendingCount) elPendingCount.textContent = `${totalPendingCount} a pagar`;
+
+      // 3. Atualiza Tabela Resumo Consolidada dos 12 Meses
+      const tbody = document.getElementById('annual-summary-table-body');
+      if (tbody) {
+        const now = new Date();
+        const isCurrentYear = now.getFullYear() === Number(targetYear);
+        const currentMonthIdx = now.getMonth();
+
+        tbody.innerHTML = monthlyData
+          .map((m) => {
+            const mPaidPct = m.total > 0 ? ((m.paid / m.total) * 100).toFixed(0) : 0;
+            const isThisMonth = isCurrentYear && m.monthIndex === currentMonthIdx;
+            const rowClass = isThisMonth ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-semibold' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40';
+
+            return `
+              <tr class="${rowClass} transition-colors">
+                <td class="py-2 px-3 flex items-center gap-1.5 whitespace-nowrap">
+                  <span>${m.monthName || m.label}</span>
+                  ${isThisMonth ? '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Atual</span>' : ''}
+                </td>
+                <td class="py-2 px-3 text-right tabular-nums text-slate-900 dark:text-slate-100 font-bold whitespace-nowrap">
+                  ${format(m.total)}
+                </td>
+                <td class="py-2 px-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-bold whitespace-nowrap">
+                  ${format(m.paid)}
+                </td>
+                <td class="py-2 px-3 text-right tabular-nums ${m.pending > 0 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-400'} whitespace-nowrap">
+                  ${format(m.pending)}
+                </td>
+                <td class="py-2 px-3 text-center whitespace-nowrap">
+                  <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    mPaidPct >= 100
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                      : mPaidPct > 0
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                  }">
+                    ${mPaidPct}%
+                  </span>
+                </td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      // 4. Renderiza o Gráfico de Colunas dos 12 Meses com Chart.js
+      if (window.ChartService) {
+        window.ChartService.renderAnnualBreakdownChart('chart-annual-breakdown', monthlyData, targetYear);
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    /**
      * Renderiza o detalhamento de categorias na seção de Relatórios
      * @param {Array<Object>} categoryData
      */
@@ -844,11 +938,20 @@
     /**
      * Gerenciamento do Modal de Lançamento / Edição
      */
-    openBillModal(mode = 'create', bill = null) {
+    /**
+     * Abre o modal de cadastro/edição de conta
+     * @param {'create'|'edit'} mode
+     * @param {Object|null} bill
+     * @param {Object|null} context { monthKey, targetYear, targetMonth }
+     */
+    openBillModal(mode = 'create', bill = null, context = null) {
       const modal = document.getElementById('bill-modal');
       const modalTitle = document.getElementById('modal-title');
       const form = document.getElementById('bill-form');
       const billIdInput = document.getElementById('bill-id');
+      const monthKeyInput = document.getElementById('bill-month-key');
+      const fixedMonthBadge = document.getElementById('bill-fixed-month-badge');
+      const fixedMonthBadgeText = document.getElementById('bill-fixed-month-badge-text');
 
       if (!modal || !form) return;
 
@@ -858,6 +961,12 @@
       this.populateSelectOptions();
 
       const submitBtnText = document.getElementById('btn-submit-bill-text');
+      const isFixed = bill && (bill.expenseType === 'fixa' || bill.category === 'fixas');
+      const targetMonthKey = (context && context.monthKey) || bill?.monthKey || (bill?.dueDate ? bill.dueDate.substring(0, 7) : '');
+
+      if (monthKeyInput) {
+        monthKeyInput.value = targetMonthKey || '';
+      }
 
       if (mode === 'edit' && bill) {
         modalTitle.textContent = 'Editar Despesa Lançada';
@@ -875,21 +984,40 @@
         if (locationSelect) locationSelect.value = bill.location === 'CG' ? 'LD' : (bill.location || 'LD');
         const expenseTypeSelect = document.getElementById('bill-expense-type');
         if (expenseTypeSelect) expenseTypeSelect.value = bill.expenseType || 'fixa';
-        document.getElementById('bill-category').value = bill.category;
+        document.getElementById('bill-category').value = bill.category || 'outros';
+        const paymentMethodSelect = document.getElementById('bill-payment-method');
+        if (paymentMethodSelect) paymentMethodSelect.value = bill.paymentMethod || 'pix';
         const invoiceSelect = document.getElementById('bill-invoice-status');
         if (invoiceSelect) invoiceSelect.value = bill.invoiceStatus || 'aguardando';
-        document.getElementById('bill-status').value = bill.status === 'atrasado' ? 'pendente' : bill.status;
+        document.getElementById('bill-status').value = bill.status === 'atrasado' ? 'pendente' : (bill.status || 'pendente');
         document.getElementById('bill-notes').value = bill.notes || '';
 
         const paymentDateInput = document.getElementById('bill-payment-date');
         if (paymentDateInput) {
           paymentDateInput.value = bill.paymentDate || '';
         }
+
+        // Se for despesa fixa, exibe badge informativo de proteção dos outros meses
+        if (isFixed && targetMonthKey && fixedMonthBadge) {
+          fixedMonthBadge.classList.remove('hidden');
+          const parts = targetMonthKey.split('-');
+          const yr = parts[0];
+          const moIdx = parseInt(parts[1], 10) - 1;
+          const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[moIdx]) || targetMonthKey;
+          if (fixedMonthBadgeText) {
+            fixedMonthBadgeText.innerHTML = `Alterações exclusivas para <strong>${monthName} de ${yr}</strong>. As informações dos meses anteriores e dos meses seguintes estão preservadas.`;
+          }
+        } else if (fixedMonthBadge) {
+          fixedMonthBadge.classList.add('hidden');
+        }
       } else {
         modalTitle.textContent = 'Nova Conta / Despesa';
         if (submitBtnText) submitBtnText.textContent = 'Cadastrar Despesa';
 
         billIdInput.value = '';
+        if (monthKeyInput) monthKeyInput.value = '';
+        if (fixedMonthBadge) fixedMonthBadge.classList.add('hidden');
+
         const invoiceNumInput = document.getElementById('bill-invoice-number');
         if (invoiceNumInput) invoiceNumInput.value = '';
         const docNumInput = document.getElementById('bill-document-number');
@@ -1317,16 +1445,40 @@
     }
 
     /**
-     * Renderiza o Cronograma Mensal de Vencimentos em view-relatorios
+     * Renderiza o Relatório de Despesas Pagas por Mês em view-relatorios
+     * com foco nos pagamentos de cada mês e botões diretos para gerar PDF e Excel
      * @param {Array<Object>} monthlyData
      */
     renderMonthlyReport(monthlyData) {
       const container = document.getElementById('report-monthly-grid');
       if (!container) return;
 
+      // Popula o select do mês no topo da seção com os 12 meses
+      const monthSelect = document.getElementById('select-report-month');
+      if (monthSelect && monthlyData && monthlyData.length > 0) {
+        const currentVal = monthSelect.value;
+        const newHtml = monthlyData
+          .map((m) => `<option value="${m.year}-${m.monthIndex}">${m.label}</option>`)
+          .join('');
+        if (monthSelect.innerHTML !== newHtml) {
+          monthSelect.innerHTML = newHtml;
+          if (currentVal && monthlyData.some((m) => `${m.year}-${m.monthIndex}` === currentVal)) {
+            monthSelect.value = currentVal;
+          } else {
+            const now = new Date();
+            const curKey = `${now.getFullYear()}-${now.getMonth()}`;
+            if (monthlyData.some((m) => `${m.year}-${m.monthIndex}` === curKey)) {
+              monthSelect.value = curKey;
+            } else if (monthlyData.length > 0) {
+              monthSelect.value = `${monthlyData[0].year}-${monthlyData[0].monthIndex}`;
+            }
+          }
+        }
+      }
+
       if (!monthlyData || monthlyData.length === 0) {
         container.innerHTML = `
-          <div class="col-span-full py-6 text-center text-slate-400 text-xs">
+          <div class="col-span-full py-8 text-center text-slate-400 text-xs">
             Nenhum dado mensal disponível para o período.
           </div>
         `;
@@ -1337,35 +1489,247 @@
         .map((m) => {
           const paidPct = m.total > 0 ? ((m.paid / m.total) * 100).toFixed(0) : 0;
           return `
-            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col justify-between">
+            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group">
               <div>
-                <div class="flex items-center justify-between mb-1.5">
+                <!-- Cabeçalho do Card: Mês e Badges de Quitação -->
+                <div class="flex items-center justify-between mb-2">
                   <span class="text-xs font-bold text-slate-900 dark:text-slate-100">${m.label}</span>
-                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                    ${m.count} ${m.count === 1 ? 'conta' : 'contas'}
-                  </span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      m.paidCount > 0
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                    }">
+                      ${m.paidCount} ${m.paidCount === 1 ? 'paga' : 'pagas'}
+                    </span>
+                    ${
+                      m.pendingCount > 0
+                        ? `<span class="text-[10px] font-semibold px-1 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">${m.pendingCount} pend.</span>`
+                        : ''
+                    }
+                  </div>
                 </div>
-                <div class="text-sm font-extrabold text-slate-900 dark:text-white tabular-nums">
-                  ${window.AppConfig.utils.formatBRL(m.total)}
+
+                <!-- DESTAQUE PRINCIPAL: TOTAL PAGO NO MÊS -->
+                <div class="p-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 mb-2.5">
+                  <div class="flex items-center justify-between text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase tracking-wider">
+                    <span>Total Pago no Mês</span>
+                    <span>${paidPct}% quitado</span>
+                  </div>
+                  <div class="text-base sm:text-lg font-black text-emerald-900 dark:text-emerald-100 tabular-nums mt-0.5">
+                    ${window.AppConfig.utils.formatBRL(m.paid)}
+                  </div>
                 </div>
-                <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-500 mt-2">
+
+                <!-- Subtotais Informativos: Total do Mês e A Pagar -->
+                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-500 px-0.5">
                   <div>
-                    <span class="block text-[10px] text-emerald-600 font-semibold">Pago (${paidPct}%)</span>
-                    <span class="font-bold text-slate-700 dark:text-slate-300">${window.AppConfig.utils.formatBRL(m.paid)}</span>
+                    <span class="block text-[10px] text-slate-400 font-medium">Total do Mês:</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">${window.AppConfig.utils.formatBRL(m.total)}</span>
                   </div>
                   <div>
-                    <span class="block text-[10px] text-amber-600 font-semibold">A Pagar</span>
-                    <span class="font-bold text-slate-700 dark:text-slate-300">${window.AppConfig.utils.formatBRL(m.pending)}</span>
+                    <span class="block text-[10px] text-amber-600 font-semibold">A Pagar:</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">${window.AppConfig.utils.formatBRL(m.pending)}</span>
                   </div>
+                </div>
+
+                <!-- Barra de Progresso de Quitação -->
+                <div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2.5">
+                  <div class="bg-emerald-500 h-full rounded-full transition-all" style="width: ${paidPct}%"></div>
                 </div>
               </div>
-              <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mt-3">
-                <div class="bg-emerald-500 h-full rounded-full transition-all" style="width: ${paidPct}%"></div>
+
+              <!-- BOTÕES DE AÇÃO: VISUALIZAR, GERAR PDF E GERAR EXCEL DESTE MÊS -->
+              <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  class="btn-month-card-view flex-1 py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-slate-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-bold flex items-center justify-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  data-year="${m.year}"
+                  data-month="${m.monthIndex}"
+                  data-label="${m.label}"
+                  title="Visualizar todas as despesas de ${m.label} na tabela acima (somente visualização)"
+                >
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>Ver Contas</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-month-card-pdf py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  data-year="${m.year}"
+                  data-month="${m.monthIndex}"
+                  data-label="${m.label}"
+                  title="Gerar e imprimir relatório PDF com as despesas de ${m.label}"
+                >
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                  <span>PDF</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-month-card-excel py-1.5 px-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+                  data-year="${m.year}"
+                  data-month="${m.monthIndex}"
+                  data-label="${m.label}"
+                  title="Baixar planilha Excel (.csv) com as despesas de ${m.label}"
+                >
+                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                  <span>Excel</span>
+                </button>
               </div>
             </div>
           `;
         })
         .join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    /**
+     * Renderiza a lista de despesas do mês selecionado em modo SOMENTE VISUALIZAÇÃO (Read-Only)
+     * Não permite alterações, edições, quitações ou exclusões nessa tela
+     * @param {Array<Object>} monthBills Contas enriquecidas do mês
+     * @param {number} year Ano
+     * @param {number} monthIndex Mês (0-11)
+     * @param {string} monthLabel Rótulo do mês
+     */
+    renderSelectedMonthBills(monthBills = [], year, monthIndex, monthLabel) {
+      const container = document.getElementById('report-selected-month-container');
+      const titleEl = document.getElementById('report-selected-month-title');
+      const statsEl = document.getElementById('report-selected-month-stats');
+      const tbody = document.getElementById('report-selected-month-table-body');
+      const emptyEl = document.getElementById('report-selected-month-empty');
+
+      if (!container || !tbody) return;
+
+      if (titleEl) {
+        titleEl.textContent = `Despesas de ${monthLabel}`;
+      }
+
+      const format = window.AppConfig.utils.formatBRL;
+      const totalAmount = monthBills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0);
+      const paidBills = monthBills.filter((b) => b.effectiveStatus === 'pago');
+      const totalPaid = paidBills.reduce((acc, b) => acc + (Number(b.amount) || 0), 0);
+      const totalPending = totalAmount - totalPaid;
+      const paidPct = totalAmount > 0 ? ((totalPaid / totalAmount) * 100).toFixed(0) : 0;
+
+      if (statsEl) {
+        statsEl.innerHTML = `
+          <span class="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold">
+            Total: ${format(totalAmount)}
+          </span>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">
+            Pago: ${format(totalPaid)} (${paidPct}%)
+          </span>
+          <span class="px-2 py-0.5 rounded ${totalPending > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-slate-100 text-slate-500'} font-bold">
+            A Pagar: ${format(totalPending)}
+          </span>
+          <span class="text-slate-500 font-medium">
+            (${monthBills.length} ${monthBills.length === 1 ? 'conta' : 'contas'})
+          </span>
+        `;
+      }
+
+      if (!monthBills || monthBills.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      if (emptyEl) emptyEl.classList.add('hidden');
+
+      tbody.innerHTML = monthBills
+        .map((bill) => {
+          const isPaid = bill.effectiveStatus === 'pago';
+          const isOverdue = bill.effectiveStatus === 'atrasado';
+          const rowBg = isPaid
+            ? 'bg-slate-50/40 dark:bg-slate-900/20 text-slate-600'
+            : isOverdue
+            ? 'bg-rose-50/30 dark:bg-rose-950/20'
+            : 'hover:bg-slate-50 dark:hover:bg-slate-800/40';
+
+          const loc = bill.location === 'CG' ? 'LD' : (bill.location || 'LD');
+          const isFixed = bill.expenseType === 'fixa';
+
+          // Status Badge Read-Only (Sem inputs ou cliques)
+          let statusBadge = `
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Aguardando
+            </span>
+          `;
+          if (isPaid) {
+            statusBadge = `
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Pago
+              </span>
+            `;
+          } else if (isOverdue) {
+            statusBadge = `
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                Atrasado
+              </span>
+            `;
+          }
+
+          // NF / Documento (Apenas texto)
+          let nfDocText = '<span class="text-slate-400 italic text-[10px]">Sem NF</span>';
+          if (bill.invoiceNumber || bill.documentNumber) {
+            const parts = [];
+            if (bill.invoiceNumber) parts.push(`NF: ${bill.invoiceNumber}`);
+            if (bill.documentNumber) parts.push(`Doc: ${bill.documentNumber}`);
+            nfDocText = `<span class="font-bold text-slate-700 dark:text-slate-200">${parts.join(' • ')}</span>`;
+          }
+
+          return `
+            <tr class="transition-colors ${rowBg}">
+              <!-- Descrição -->
+              <td class="py-2.5 px-3">
+                <div class="font-bold text-slate-900 dark:text-slate-100 text-xs">${bill.description}</div>
+                ${bill.notes ? `<div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-xs">${bill.notes}</div>` : ''}
+              </td>
+              <!-- Vencimento -->
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-xs text-slate-700 dark:text-slate-300">
+                ${window.AppConfig.utils.formatDate(bill.dueDate)}
+              </td>
+              <!-- Data de Pagamento (somente texto) -->
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-xs">
+                ${bill.paymentDate ? `<span class="font-bold text-emerald-700 dark:text-emerald-300">${window.AppConfig.utils.formatDate(bill.paymentDate)}</span>` : '<span class="text-slate-400">-</span>'}
+              </td>
+              <!-- Local -->
+              <td class="py-2.5 px-2 text-center whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${loc === 'LD' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' : loc === 'REC' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'}">
+                  ${loc}
+                </span>
+              </td>
+              <!-- Natureza F/V -->
+              <td class="py-2.5 px-2 text-center whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isFixed ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}">
+                  ${isFixed ? 'Fixa (F)' : 'Variável (V)'}
+                </span>
+              </td>
+              <!-- Categoria -->
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-xs text-slate-600 dark:text-slate-400">
+                ${bill.categoryMeta?.label || bill.category || 'Outros'}
+              </td>
+              <!-- NF / Doc -->
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-[11px]">
+                ${nfDocText}
+              </td>
+              <!-- Situação -->
+              <td class="py-2.5 px-2.5 text-center whitespace-nowrap">
+                ${statusBadge}
+              </td>
+              <!-- Valor R$ -->
+              <td class="py-2.5 px-3 text-right tabular-nums font-black text-slate-900 dark:text-slate-100 whitespace-nowrap text-xs">
+                ${format(bill.amount)}
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      if (window.lucide) window.lucide.createIcons();
     }
 
     /**
@@ -1429,100 +1793,143 @@
      * @param {Array<Object>} bills
      * @param {Object} kpis
      */
-    openStatementModal(bills, kpis) {
+    /**
+     * Abre o modal de Demonstrativo Executivo (Geral ou de Mês Específico)
+     * @param {Array<Object>} bills
+     * @param {Object} kpis
+     * @param {Object} options { isMonthReport, monthLabel, year, monthIndex }
+     */
+    openStatementModal(bills, kpis, options = {}) {
+      this.currentStatementData = { bills, kpis, options };
       const modal = document.getElementById('statement-modal');
       const bodyEl = document.getElementById('statement-modal-body');
       if (!modal || !bodyEl) return;
 
-      const enriched = window.BillService.enrichBills(bills);
-      const pendingBills = enriched.filter((b) => b.effectiveStatus !== 'pago');
+      const isMonth = Boolean(options.isMonthReport);
+      const title = isMonth
+        ? `Relatório de Despesas Pagas - ${options.monthLabel}`
+        : 'Demonstrativo Executivo de Contas a Pagar';
+
+      const enriched = window.BillService.enrichBills(bills, {
+        targetYear: options.year,
+        targetMonth: options.monthIndex
+      });
+
       const paidBills = enriched.filter((b) => b.effectiveStatus === 'pago');
+      const pendingBills = enriched.filter((b) => b.effectiveStatus !== 'pago');
 
       bodyEl.innerHTML = `
         <div class="space-y-4 text-xs">
-          <!-- Cabeçalho do Extrato -->
-          <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-2">
+          <!-- Cabeçalho Oficial do Relatório -->
+          <div class="p-3.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h4 class="font-bold text-sm">Demonstrativo Geral de Contas a Pagar</h4>
+              <span class="text-[9px] uppercase font-bold tracking-wider text-emerald-700 block">
+                2º Oficial de RI, RTD e RCPJ de São José dos Campos
+              </span>
+              <h4 class="font-extrabold text-sm sm:text-base text-emerald-950">${title}</h4>
               <p class="text-[11px] text-emerald-800">Posição financeira gerada em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
             <div class="text-right">
-              <span class="text-[10px] uppercase font-bold text-emerald-700 block">Total Geral</span>
-              <span class="text-base font-extrabold tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalAmount)}</span>
+              <span class="text-[10px] uppercase font-bold text-emerald-700 block">Total Quitado no Mês</span>
+              <span class="text-base sm:text-lg font-black text-emerald-900 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPaid)}</span>
             </div>
           </div>
 
-          <!-- Grade de Resumo -->
+          <!-- Grade de Indicadores do Mês -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/50">
+              <span class="text-[10px] uppercase font-bold text-emerald-800 block">Total Quitado (Pago)</span>
+              <span class="text-sm font-extrabold text-emerald-800 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPaid)}</span>
+              <span class="text-[10px] text-emerald-700 block font-semibold">${paidBills.length} ${paidBills.length === 1 ? 'conta paga' : 'contas pagas'} (${kpis.paidPercentage}%)</span>
+            </div>
             <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">A Pagar</span>
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">A Pagar (Pendente)</span>
               <span class="text-sm font-bold text-amber-700 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPending)}</span>
-              <span class="text-[10px] text-slate-400 block">${kpis.pendingCount} pendentes</span>
+              <span class="text-[10px] text-slate-400 block">${pendingBills.length} pendentes</span>
             </div>
             <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">Total Pago</span>
-              <span class="text-sm font-bold text-emerald-700 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPaid)}</span>
-              <span class="text-[10px] text-slate-400 block">${kpis.paidCount} pagas (${kpis.paidPercentage}%)</span>
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Total do Mês</span>
+              <span class="text-sm font-bold text-slate-900 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalAmount)}</span>
+              <span class="text-[10px] text-slate-400 block">${enriched.length} contas no total</span>
             </div>
             <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">Vencidas</span>
-              <span class="text-sm font-bold text-rose-700 tabular-nums">${window.AppConfig.utils.formatBRL(kpis.overdueTotal)}</span>
-              <span class="text-[10px] text-slate-400 block">${kpis.overdueCount} atrasadas</span>
-            </div>
-            <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50">
-              <span class="text-[10px] uppercase font-bold text-slate-500 block">Total Contas</span>
-              <span class="text-sm font-bold text-slate-800 tabular-nums">${bills.length} contas</span>
-              <span class="text-[10px] text-slate-400 block">cadastradas</span>
+              <span class="text-[10px] uppercase font-bold text-slate-500 block">Situação Geral</span>
+              <span class="text-sm font-bold ${kpis.paidPercentage === 100 ? 'text-emerald-700' : 'text-slate-800'} tabular-nums">
+                ${kpis.paidPercentage}% Quitado
+              </span>
+              <span class="text-[10px] text-slate-400 block">${kpis.pendingCount === 0 ? 'Mês 100% em dia' : 'Possui pendências'}</span>
             </div>
           </div>
 
-          <!-- Contas Pendentes -->
+          <!-- SEÇÃO 1: DESPESAS PAGAS NO MÊS (DESTAQUE PRIORITÁRIO) -->
           <div>
-            <h5 class="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center justify-between">
-              <span>Contas Pendentes (${pendingBills.length})</span>
-              <span class="text-amber-700 font-extrabold">${window.AppConfig.utils.formatBRL(kpis.totalPending)}</span>
-            </h5>
-            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <h5 class="font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                <span>Despesas Pagas no Mês (${paidBills.length})</span>
+              </h5>
+              <span class="text-emerald-800 dark:text-emerald-300 font-extrabold tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPaid)}</span>
+            </div>
+            <div class="border border-emerald-200 dark:border-emerald-900/60 rounded-xl overflow-hidden divide-y divide-emerald-100 dark:divide-emerald-950/60">
               ${
-                pendingBills.length === 0
-                  ? '<div class="p-3 text-center text-slate-400">Nenhuma conta pendente! Todas estão quitadas.</div>'
-                  : pendingBills.map((b) => `
-                    <div class="p-2 flex items-center justify-between hover:bg-slate-50">
-                      <div>
-                        <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mr-1 ${
-                          b.location === 'REC' ? 'bg-blue-100 text-blue-800' : b.location === 'SE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                        }">${b.location === 'CG' ? 'LD' : (b.location || 'LD')}</span>
-                        <span class="font-semibold text-slate-800">${b.description}</span>
-                        ${(b.invoiceNumber || b.documentNumber) ? `<span class="text-[10px] text-emerald-800 font-medium block">${b.invoiceNumber ? `NF: ${b.invoiceNumber}` : ''} ${b.documentNumber ? `Doc: ${b.documentNumber}` : ''}</span>` : ''}
-                        <span class="text-[10px] text-slate-400 block">${b.categoryMeta.label} • Vence em ${window.AppConfig.utils.formatDate(b.dueDate)} (${b.relativeDate.text})</span>
+                paidBills.length === 0
+                  ? '<div class="p-4 text-center text-slate-400 bg-slate-50/50">Nenhuma despesa foi quitada neste mês até o momento.</div>'
+                  : paidBills.map((b) => `
+                    <div class="p-2.5 flex items-center justify-between hover:bg-emerald-50/40 dark:hover:bg-emerald-950/30 transition-colors">
+                      <div class="min-w-0 pr-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${
+                            b.location === 'REC' ? 'bg-sky-100 text-sky-800' : b.location === 'SE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                          }">${b.location === 'CG' ? 'LD' : (b.location || 'LD')}</span>
+                          <span class="inline-block px-1 py-0.2 rounded text-[9px] font-bold uppercase border ${
+                            b.expenseType === 'variavel' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          }">${b.expenseType === 'variavel' ? 'V' : 'F'}</span>
+                          <span class="font-bold text-slate-800 dark:text-slate-200">${b.description}</span>
+                          <span class="text-[10px] text-slate-400">• ${b.categoryMeta?.label || b.category}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                          <span>Venc: <strong>${window.AppConfig.utils.formatDate(b.dueDate)}</strong></span>
+                          <span class="text-emerald-700 font-bold">• Pago em: ${b.paymentDate ? window.AppConfig.utils.formatDate(b.paymentDate) : 'Hoje'}</span>
+                          ${(b.invoiceNumber || b.documentNumber) ? `<span class="text-slate-600">• ${b.invoiceNumber ? `NF: ${b.invoiceNumber}` : ''} ${b.documentNumber ? `Doc: ${b.documentNumber}` : ''}</span>` : ''}
+                        </div>
                       </div>
-                      <span class="font-bold text-slate-900 tabular-nums">${window.AppConfig.utils.formatBRL(b.amount)}</span>
+                      <span class="font-extrabold text-emerald-800 dark:text-emerald-300 tabular-nums whitespace-nowrap text-right">
+                        ${window.AppConfig.utils.formatBRL(b.amount)}
+                      </span>
                     </div>
                   `).join('')
               }
             </div>
           </div>
 
-          <!-- Contas Pagas -->
+          <!-- SEÇÃO 2: DESPESAS PENDENTES / A PAGAR NO MÊS -->
           <div>
-            <h5 class="font-bold text-slate-800 dark:text-slate-100 mb-1.5 flex items-center justify-between">
-              <span>Contas Quitadas (${paidBills.length})</span>
-              <span class="text-emerald-700 font-extrabold">${window.AppConfig.utils.formatBRL(kpis.totalPaid)}</span>
-            </h5>
-            <div class="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <h5 class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span>Despesas Pendentes / A Pagar (${pendingBills.length})</span>
+              </h5>
+              <span class="text-amber-700 font-bold tabular-nums">${window.AppConfig.utils.formatBRL(kpis.totalPending)}</span>
+            </div>
+            <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
               ${
-                paidBills.length === 0
-                  ? '<div class="p-3 text-center text-slate-400">Nenhuma conta quitada até o momento.</div>'
-                  : paidBills.map((b) => `
-                    <div class="p-2 flex items-center justify-between hover:bg-slate-50">
-                      <div>
-                        <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mr-1 ${
-                          b.location === 'REC' ? 'bg-blue-100 text-blue-800' : b.location === 'SE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                        }">${b.location === 'CG' ? 'LD' : (b.location || 'LD')}</span>
-                        <span class="font-medium text-slate-700">${b.description}</span>
-                        <span class="text-[10px] text-slate-400 block">Paga em ${b.paymentDate ? window.AppConfig.utils.formatDate(b.paymentDate) : '-'}</span>
+                pendingBills.length === 0
+                  ? '<div class="p-3 text-center text-emerald-600 font-semibold bg-emerald-50/30">Parabéns! Todas as contas deste mês foram pagas.</div>'
+                  : pendingBills.map((b) => `
+                    <div class="p-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <div class="min-w-0 pr-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${
+                            b.location === 'REC' ? 'bg-sky-100 text-sky-800' : b.location === 'SE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                          }">${b.location === 'CG' ? 'LD' : (b.location || 'LD')}</span>
+                          <span class="font-semibold text-slate-800 dark:text-slate-200">${b.description}</span>
+                          <span class="text-[10px] text-slate-400">• Vence em ${window.AppConfig.utils.formatDate(b.dueDate)}</span>
+                        </div>
+                        ${(b.invoiceNumber || b.documentNumber) ? `<div class="text-[10px] text-slate-500 mt-0.5">${b.invoiceNumber ? `NF: ${b.invoiceNumber}` : ''} ${b.documentNumber ? `Doc: ${b.documentNumber}` : ''}</div>` : ''}
                       </div>
-                      <span class="font-bold text-emerald-800 tabular-nums">${window.AppConfig.utils.formatBRL(b.amount)}</span>
+                      <span class="font-bold text-slate-900 dark:text-white tabular-nums whitespace-nowrap text-right">
+                        ${window.AppConfig.utils.formatBRL(b.amount)}
+                      </span>
                     </div>
                   `).join('')
               }
@@ -1533,14 +1940,17 @@
 
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
+      document.body.classList.add('modal-open-statement');
       if (window.lucide) window.lucide.createIcons();
     }
 
     closeStatementModal() {
       const modal = document.getElementById('statement-modal');
+      this.currentStatementData = null;
       if (modal) {
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
+        document.body.classList.remove('modal-open-statement');
       }
     }
   }

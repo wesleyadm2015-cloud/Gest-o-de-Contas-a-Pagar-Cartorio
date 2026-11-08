@@ -75,119 +75,6 @@
             />
           </a>
         </div>
-
-        <!-- Seletor de Abas (Navegação Central Compacta) -->
-        <nav class="hidden md:flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-lg border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold">
-          <button
-            type="button"
-            id="tab-btn-contas"
-            class="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs transition-all"
-          >
-            <i data-lucide="table" class="w-3.5 h-3.5"></i>
-            Contas & Lançamentos
-          </button>
-          <button
-            type="button"
-            id="tab-btn-relatorios"
-            class="flex items-center gap-1.5 px-3 py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
-          >
-            <i data-lucide="pie-chart" class="w-3.5 h-3.5"></i>
-            Relatórios & Insights
-          </button>
-        </nav>
-
-        <!-- Ações do Header (Sino, Tema, Botão Nova Conta) -->
-        <div class="flex items-center gap-1.5 sm:gap-2">
-          
-          <!-- Notificação Bell com Badge e Popover -->
-          <div class="relative">
-            <button
-              type="button"
-              id="btn-notification-bell"
-              class="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Notificações de Contas Urgentes"
-            >
-              <i data-lucide="bell" class="w-4 h-4"></i>
-              <span
-                id="notification-bell-badge"
-                class="hidden absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-slate-900 animate-soft-pulse"
-              >
-                0
-              </span>
-            </button>
-
-            <!-- Popover de Notificações -->
-            <div
-              id="notification-popover"
-              class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden"
-            >
-              <div class="p-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div class="flex items-center gap-1.5">
-                  <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-500"></i>
-                  <span class="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide">Contas com Urgência</span>
-                </div>
-              </div>
-              <!-- Acesso Rápido ao Lembrete de 2 Dias Úteis -->
-              <button
-                type="button"
-                id="btn-popover-open-daily-alert"
-                class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border-b border-emerald-100 dark:border-emerald-900/60 transition-colors"
-                title="Abrir popup de contas que vencem nos próximos 2 dias úteis"
-              >
-                <div class="flex items-center gap-2">
-                  <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-emerald-600"></i>
-                  <span>Lembrete (Vencendo em 2 Dias Úteis)</span>
-                </div>
-                <span id="popover-alert-count-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">0</span>
-              </button>
-              <div id="notification-popover-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                <!-- Preenchido dinamicamente via JS -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Botão Modo Escuro / Claro -->
-          <button
-            type="button"
-            id="btn-toggle-theme"
-            class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title="Alternar Tema (Escuro / Claro)"
-          >
-            <i data-lucide="sun" class="theme-icon-sun w-4 h-4 hidden text-amber-400"></i>
-            <i data-lucide="moon" class="theme-icon-moon w-4 h-4 text-slate-600"></i>
-          </button>
-
-          <!-- Botão Nova Conta (+ Principal) -->
-          <button
-            type="button"
-            id="btn-new-bill"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-all transform active:scale-95"
-          >
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">Nova Conta</span>
-            <span class="sm:hidden">Nova</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Abas Mobile (visíveis apenas em telas pequenas) -->
-      <div class="flex md:hidden border-t border-slate-200 dark:border-slate-800 py-1.5 gap-1.5 text-xs font-semibold">
-        <button
-          type="button"
-          id="tab-btn-contas-mobile"
-          onclick="window.App.switchTab('contas')"
-          class="flex-1 py-1 px-2.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-center text-xs"
-        >
-          Contas
-        </button>
-        <button
-          type="button"
-          id="tab-btn-relatorios-mobile"
-          onclick="window.App.switchTab('relatorios')"
-          class="flex-1 py-1 px-2.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-center text-xs"
-        >
-          Relatórios
-        </button>
       </div>
     </div>
   </header>
@@ -281,67 +168,6 @@
           </button>
         </div>
 
-        <!-- SEÇÃO 3: FERRAMENTAS & EXPORTAÇÕES -->
-        <div class="space-y-1 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
-            Exportação & Ações
-          </span>
-
-          <!-- Baixar Planilha CSV -->
-          <button
-            type="button"
-            id="sidebar-action-csv"
-            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
-            <span>Baixar Planilha (CSV)</span>
-          </button>
-
-          <!-- Copiar Resumo -->
-          <button
-            type="button"
-            id="sidebar-action-copy"
-            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <i data-lucide="clipboard-copy" class="w-4 h-4 text-slate-500"></i>
-            <span>Copiar Resumo (WhatsApp)</span>
-          </button>
-
-          <!-- Imprimir Relatório -->
-          <button
-            type="button"
-            id="sidebar-action-print"
-            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <i data-lucide="printer" class="w-4 h-4 text-slate-500"></i>
-            <span>Imprimir Relatório (A4)</span>
-          </button>
-
-          <!-- Limpar Todas as Despesas -->
-          <button
-            type="button"
-            id="sidebar-action-clear-all"
-            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-            title="Remove todas as contas e despesas cadastradas"
-          >
-            <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
-            <span>Limpar Todas as Despesas</span>
-          </button>
-        </div>
-
-        <!-- Mini Widget Informativo no Rodapé da Sidebar -->
-        <div class="p-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-900/60 text-xs">
-          <div class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
-            Total a Pagar (Pendente)
-          </div>
-          <div id="sidebar-pending-total" class="text-base font-extrabold text-emerald-950 dark:text-emerald-100 tabular-nums mt-0.5">
-            R$ 0,00
-          </div>
-          <div class="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
-            Calculado automaticamente
-          </div>
-        </div>
-
       </aside>
 
       <!-- ===================================================================== -->
@@ -414,104 +240,8 @@
             >
               <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
-
-            <!-- Botão Atalho: Mês Atual -->
-            <button
-              type="button"
-              id="btn-current-month"
-              class="ml-1 px-2.5 py-1 rounded-md text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 transition-all hover:scale-105 active:scale-95"
-              title="Voltar para o Mês Atual"
-            >
-              Hoje / Mês Atual
-            </button>
           </div>
         </div>
-      </div>
-
-      <!-- Lado Direito: Resumo Dinâmico do Mês Selecionado -->
-      <div class="flex items-center gap-3 ml-auto">
-        <div class="text-right">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block" id="month-summary-label">
-            Total do Mês Selecionado
-          </span>
-          <span class="text-sm sm:text-base font-extrabold text-emerald-900 dark:text-emerald-200 tabular-nums" id="month-summary-total">
-            R$ 0,00
-          </span>
-        </div>
-        <span id="month-summary-count" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          0 contas
-        </span>
-      </div>
-    </div>
-
-    <!-- 2. SELETOR DE PERÍODO & CONTROLE SUPERIOR (COMPACTO) -->
-    <div class="flex flex-wrap items-center justify-between gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs text-xs">
-      <div class="flex items-center gap-1 overflow-x-auto font-semibold">
-        <span class="text-slate-400 uppercase tracking-wider text-[10px] pr-1.5 font-bold hidden sm:inline">Período:</span>
-        <button
-          type="button"
-          data-period="hoje"
-          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
-        >
-          Hoje
-        </button>
-        <button
-          type="button"
-          data-period="semana"
-          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
-        >
-          Esta Semana
-        </button>
-        <button
-          type="button"
-          data-period="mes"
-          id="btn-period-month"
-          class="btn-period-filter px-2.5 py-1 rounded-md bg-emerald-600 text-white shadow-xs transition-all whitespace-nowrap"
-        >
-          Mês Selecionado
-        </button>
-        <button
-          type="button"
-          data-period="todos"
-          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
-        >
-          Todos
-        </button>
-        <button
-          type="button"
-          data-period="personalizado"
-          class="btn-period-filter px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all whitespace-nowrap"
-        >
-          Personalizado
-        </button>
-      </div>
-
-      <!-- Filtro de Datas Personalizadas -->
-      <div id="custom-date-container" class="hidden flex items-center gap-1.5 text-xs">
-        <input
-          type="date"
-          id="custom-date-start"
-          class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200 focus-ring"
-        />
-        <span class="text-slate-400 text-xs">até</span>
-        <input
-          type="date"
-          id="custom-date-end"
-          class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs text-slate-700 dark:text-slate-200 focus-ring"
-        />
-      </div>
-
-      <!-- Botão Rápido de Demonstração / Reset -->
-      <div class="flex items-center gap-1.5 ml-auto">
-        <button
-          type="button"
-          id="btn-reset-demo"
-          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-medium transition-all"
-          title="Recarrega dados de teste dinâmicos para hoje"
-        >
-          <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-          <span>Recarregar Demo</span>
-        </button>
       </div>
     </div>
 
@@ -519,10 +249,10 @@
     <section class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         
-        <!-- KPI 1: Total a Pagar / Pendente -->
+        <!-- KPI 1: Total Aguardando Pagamento -->
         <div class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
           <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>A Pagar</span>
+            <span>Total Aguardando Pagamento</span>
             <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
           </div>
           <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums mt-0.5" id="kpi-total-pending">
@@ -530,16 +260,16 @@
           </div>
           <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
             <span class="px-1.5 py-0.5 rounded font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300" id="kpi-pending-count">
-              0 pendentes
+              0 aguardando
             </span>
             <span class="text-slate-400">no período</span>
           </div>
         </div>
 
-        <!-- KPI 2: Total Quitado -->
+        <!-- KPI 2: Total Pago -->
         <div class="bg-slate-50/70 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
           <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            <span>Total Quitado</span>
+            <span>Total Pago</span>
             <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
           </div>
           <div class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums mt-0.5" id="kpi-total-paid">
@@ -547,7 +277,7 @@
           </div>
           <div class="flex items-center gap-1.5 mt-0.5 text-[10px]">
             <span class="px-1.5 py-0.5 rounded font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" id="kpi-paid-percentage">
-              0% quitado
+              0% pago
             </span>
             <span class="text-slate-400">compromissos</span>
           </div>
@@ -673,16 +403,16 @@
             </select>
           </div>
 
-          <!-- Botões de Ação Rápida (Copiar Resumo & Exportar CSV) -->
+          <!-- Botões de Ação Rápida (Exportar PDF & Exportar CSV) -->
           <div class="flex items-center gap-1.5 shrink-0 w-full sm:w-auto justify-end">
             <button
               type="button"
-              id="btn-copy-summary"
-              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all whitespace-nowrap"
-              title="Copia resumo em texto para WhatsApp / E-mail"
+              id="btn-export-pdf"
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all whitespace-nowrap cursor-pointer active:scale-95"
+              title="Gerar e salvar demonstrativo em PDF (A4)"
             >
-              <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-400"></i>
-              <span>Copiar Resumo</span>
+              <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Exportar PDF</span>
             </button>
 
             <button
@@ -770,75 +500,213 @@
     <!-- ======================================================================= -->
     <div id="view-relatorios" class="hidden space-y-3">
       
-      <!-- Linha de Gráficos -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <!-- Gráfico Anual de Colunas: Despesas Mensais & Valores Pagos (12 Meses) -->
+      <div id="report-annual-chart-section" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
         
-        <!-- Gráfico 1: Despesas por Categoria (Donut) -->
-        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col">
-          <div class="flex items-center justify-between mb-2">
-            <div>
-              <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Despesas por Categoria</h3>
-              <p class="text-[11px] text-slate-400">Distribuição percentual dos seus gastos</p>
-            </div>
-            <div class="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-              <i data-lucide="pie-chart" class="w-4 h-4"></i>
+        <!-- Cabeçalho do Gráfico Anual -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+                  Despesas Mensais & Valores Pagos (12 Meses)
+                </h3>
+                <p class="text-[11px] text-slate-400">
+                  Comparativo mês a mês das despesas e valores pagos no período de 12 meses do ano vigente
+                </p>
+              </div>
             </div>
           </div>
-          <div class="relative flex-1 min-h-[220px] chart-container flex items-center justify-center">
-            <canvas id="chart-categories"></canvas>
+
+          <!-- Badge do Exercício Vigente -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="annual-chart-year-badge" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Exercício Vigente (12 Meses)</span>
+            </span>
           </div>
         </div>
 
-        <!-- Gráfico 2: Balanço de Status (Pagas vs Pendentes vs Atrasadas) -->
-        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col">
-          <div class="flex items-center justify-between mb-2">
-            <div>
-              <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Balanço de Pagamentos</h3>
-              <p class="text-[11px] text-slate-400">Comparativo entre pagas, pendentes e atrasadas</p>
+        <!-- Indicadores Anuais Rápidos (Cards Compactos de Apoio) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="p-3 rounded-lg bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-900/50">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+              <span>Total Despesas no Ano</span>
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span>
             </div>
-            <div class="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-              <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            <div id="annual-kpi-total-expenses" class="text-base sm:text-lg font-black text-blue-950 dark:text-blue-100 tabular-nums mt-0.5">
+              R$ 0,00
+            </div>
+            <div id="annual-kpi-total-count" class="text-[10px] text-blue-600/80 dark:text-blue-400 mt-0.5 font-medium">
+              0 contas registradas
             </div>
           </div>
-          <div class="relative flex-1 min-h-[220px] chart-container flex items-center justify-center">
-            <canvas id="chart-status"></canvas>
+
+          <div class="p-3 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+              <span>Total Pago no Ano</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+            </div>
+            <div id="annual-kpi-total-paid" class="text-base sm:text-lg font-black text-emerald-950 dark:text-emerald-100 tabular-nums mt-0.5">
+              R$ 0,00
+            </div>
+            <div id="annual-kpi-paid-percentage" class="text-[10px] text-emerald-600/80 dark:text-emerald-400 mt-0.5 font-semibold">
+              0% quitado
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              <span>Saldo a Pagar no Ano</span>
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            </div>
+            <div id="annual-kpi-total-pending" class="text-base sm:text-lg font-black text-amber-950 dark:text-amber-100 tabular-nums mt-0.5">
+              R$ 0,00
+            </div>
+            <div id="annual-kpi-pending-count" class="text-[10px] text-amber-600/80 dark:text-amber-400 mt-0.5 font-medium">
+              0 compromissos pendentes
+            </div>
           </div>
         </div>
+
+        <!-- Canvas do Gráfico de Colunas dos 12 Meses -->
+        <div class="relative w-full h-[320px] sm:h-[360px] pt-1">
+          <canvas id="chart-annual-breakdown"></canvas>
+        </div>
+
+        <!-- Tabela Resumo Consolidada dos 12 Meses -->
+        <div class="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-lg">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
+              <tr>
+                <th class="py-2 px-3">Mês</th>
+                <th class="py-2 px-3 text-right">Despesas do Mês</th>
+                <th class="py-2 px-3 text-right">Valores Pagos</th>
+                <th class="py-2 px-3 text-right">Saldo a Pagar</th>
+                <th class="py-2 px-3 text-center">% Quitado</th>
+              </tr>
+            </thead>
+            <tbody id="annual-summary-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+              <!-- Preenchido dinamicamente via JS -->
+            </tbody>
+          </table>
+        </div>
+
       </div>
 
-      <!-- Detalhamento em Barras e Tabela de Categorias -->
-      <div id="report-category-list-section" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div class="flex items-center justify-between mb-3">
+      <!-- Relatório 3: Relatório de Despesas Pagas por Mês -->
+      <div id="report-monthly-section" class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <!-- Cabeçalho do Relatório -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Detalhamento por Categoria</h3>
-            <p class="text-[11px] text-slate-400">Valores totais e participação relativa em cada área</p>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+                Relatório de Despesas Pagas por Mês
+              </h3>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Demonstrativo consolidado de despesas pagas mês a mês com exportação individual para PDF e Excel
+            </p>
           </div>
-          <button
-            type="button"
-            id="btn-export-csv-report"
-            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
-          >
-            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
-            Baixar CSV
-          </button>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+              Exercício 2026
+            </span>
+          </div>
         </div>
 
-        <div id="report-category-list" class="space-y-2.5">
-          <!-- Inserido dinamicamente via JS -->
-        </div>
-      </div>
+        <!-- Barra de Ações: Seleção de Mês + Botões de Exportação (PDF e Excel) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <label for="select-report-month" class="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap flex items-center gap-1.5">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Mês Selecionado:</span>
+            </label>
+            <select
+              id="select-report-month"
+              class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus-ring cursor-pointer"
+            >
+              <!-- Preenchido dinamicamente com os 12 meses -->
+            </select>
+          </div>
 
-      <!-- Relatório 3: Cronograma Mensal de Vencimentos -->
-      <div id="report-monthly-section" class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div class="flex items-center justify-between mb-3">
-          <div>
-            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Cronograma Mensal de Vencimentos</h3>
-            <p class="text-[11px] text-slate-400">Total de compromissos distribuídos mês a mês com percentual quitado</p>
-          </div>
-          <div class="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
-            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              id="btn-export-selected-month-pdf"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Gerar e imprimir relatório PDF com as despesas do mês selecionado"
+            >
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              <span>Gerar PDF do Mês</span>
+            </button>
+            <button
+              type="button"
+              id="btn-export-selected-month-excel"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Baixar planilha Excel (.csv) com as despesas do mês selecionado"
+            >
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+              <span>Gerar Excel do Mês</span>
+            </button>
           </div>
         </div>
+
+        <!-- Painel de Visualização Somente Leitura das Despesas do Mês Selecionado -->
+        <div id="report-selected-month-container" class="space-y-3 p-4 rounded-xl border border-emerald-200/90 dark:border-emerald-900/60 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-2xs">
+          
+          <!-- Cabeçalho do Mês Selecionado -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-emerald-100 dark:border-emerald-900/50">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+              <h4 id="report-selected-month-title" class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                Despesas do Mês Selecionado
+              </h4>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <i data-lucide="eye" class="w-3 h-3 text-emerald-600"></i>
+                Somente Visualização
+              </span>
+            </div>
+            <div id="report-selected-month-stats" class="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2 flex-wrap">
+              <!-- Subtotais do Mês -->
+            </div>
+          </div>
+
+          <!-- Tabela Somente Leitura das Contas daquele Mês -->
+          <div class="overflow-x-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
+                <tr>
+                  <th class="py-2.5 px-3">Descrição da Conta</th>
+                  <th class="py-2.5 px-2.5">Vencimento</th>
+                  <th class="py-2.5 px-2.5">Data Pagamento</th>
+                  <th class="py-2.5 px-2 text-center">Local</th>
+                  <th class="py-2.5 px-2 text-center">Tipo</th>
+                  <th class="py-2.5 px-2.5">Categoria</th>
+                  <th class="py-2.5 px-2.5">NF / Doc</th>
+                  <th class="py-2.5 px-2.5 text-center">Situação</th>
+                  <th class="py-2.5 px-3 text-right">Valor (R$)</th>
+                </tr>
+              </thead>
+              <tbody id="report-selected-month-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                <!-- Injetado dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State quando não houver contas no mês -->
+          <div id="report-selected-month-empty" class="hidden py-8 text-center text-slate-400 text-xs bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
+            <i data-lucide="inbox" class="w-7 h-7 mx-auto mb-1.5 opacity-50 text-slate-400"></i>
+            <span>Nenhuma despesa registrada para o mês selecionado.</span>
+          </div>
+
+        </div>
+
+        <!-- Grade com os 12 Cards Mensais -->
         <div id="report-monthly-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <!-- Injetado dinamicamente via JS -->
         </div>
@@ -1027,24 +895,32 @@
       </div>
 
       <!-- Rodapé de Ações do Modal -->
-      <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between gap-2">
-        <span class="text-[11px] text-slate-400">Pronto para impressão ou exportação</span>
-        <div class="flex items-center gap-2">
+      <div id="statement-modal-footer" class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-wrap items-center justify-between gap-2">
+        <span class="text-[11px] text-slate-400">Pronto para salvar em PDF ou exportar</span>
+        <div class="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             id="btn-print-statement"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
           >
             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-            <span>Imprimir (A4)</span>
+            <span>Salvar / Imprimir PDF (A4)</span>
+          </button>
+          <button
+            type="button"
+            id="btn-export-statement-excel"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 dark:bg-teal-950 dark:hover:bg-teal-900 dark:text-teal-200 dark:border-teal-800 text-xs font-semibold transition-all cursor-pointer active:scale-95"
+          >
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+            <span>Baixar Excel</span>
           </button>
           <button
             type="button"
             id="btn-copy-statement"
-            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all cursor-pointer"
           >
             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            <span>Copiar Relatório</span>
+            <span>Copiar Texto</span>
           </button>
         </div>
       </div>
@@ -1082,6 +958,20 @@
       <!-- Formulário do Modal -->
       <form id="bill-form" class="p-6 space-y-4">
         <input type="hidden" id="bill-id" />
+        <input type="hidden" id="bill-month-key" />
+
+        <!-- Alerta Informativo de Isolamento Mensal para Despesa Fixa -->
+        <div
+          id="bill-fixed-month-badge"
+          class="hidden p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5"
+        >
+          <div class="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 shrink-0">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+          <span id="bill-fixed-month-badge-text" class="leading-relaxed">
+            Alterações exclusivas para este mês de referência. Os meses anteriores e posteriores estão preservados.
+          </span>
+        </div>
 
         <!-- Descrição -->
         <div>

@@ -104,6 +104,13 @@
                 b.dueDay = parseInt(b.dueDate.split('-')[2], 10) || 1;
                 migrated = true;
               }
+              if (!b.monthlyOverrides && b.monthlyStatus) {
+                b.monthlyOverrides = { ...b.monthlyStatus };
+                migrated = true;
+              } else if (!b.monthlyOverrides) {
+                b.monthlyOverrides = {};
+                migrated = true;
+              }
             }
             return b;
           });
@@ -142,11 +149,36 @@
           const dueDay = billData.dueDay || (dueDate && dueDate.includes('-') ? parseInt(dueDate.split('-')[2], 10) : 1);
           const startMonthKey = billData.startMonthKey || (dueDate && dueDate.includes('-') ? dueDate.substring(0, 7) : window.AppConfig.utils.toISODateString().substring(0, 7));
           
+          const isFixed = ['fixa', 'variavel'].includes(billData.expenseType)
+            ? billData.expenseType === 'fixa'
+            : (billData.category === 'fixas');
+
+          const finalStatus = billData.status || 'pendente';
+          const finalPaymentDate = finalStatus === 'pago' ? (billData.paymentDate || window.AppConfig.utils.toISODateString()) : null;
+
+          const monthlyOverrides = billData.monthlyOverrides || {};
+          if (isFixed && startMonthKey) {
+            monthlyOverrides[startMonthKey] = {
+              amount: Number(billData.amount) || 0,
+              description: String(billData.description || '').trim(),
+              dueDate: dueDate,
+              dueDay: dueDay,
+              location: ['LD', 'REC', 'SE'].includes(billData.location) ? billData.location : (billData.location === 'CG' ? 'LD' : 'LD'),
+              category: billData.category || 'outros',
+              paymentMethod: billData.paymentMethod || 'pix',
+              status: finalStatus,
+              paymentDate: finalPaymentDate,
+              invoiceNumber: String(billData.invoiceNumber || '').trim(),
+              documentNumber: String(billData.documentNumber || '').trim(),
+              notes: String(billData.notes || '').trim()
+            };
+          }
+
           const newBill = {
             id: billData.id || window.AppConfig.utils.generateId(),
             description: String(billData.description || '').trim(),
             location: ['LD', 'REC', 'SE'].includes(billData.location) ? billData.location : (billData.location === 'CG' ? 'LD' : 'LD'),
-            expenseType: ['fixa', 'variavel'].includes(billData.expenseType) ? billData.expenseType : (billData.category === 'fixas' ? 'fixa' : 'variavel'),
+            expenseType: isFixed ? 'fixa' : 'variavel',
             dueDay,
             startMonthKey,
             launchDueDate: dueDate,
@@ -155,12 +187,13 @@
             amount: Number(billData.amount) || 0,
             dueDate,
             category: billData.category || 'outros',
-            status: billData.status || 'pendente',
+            status: finalStatus,
             paymentMethod: billData.paymentMethod || 'pix',
             invoiceStatus: billData.invoiceStatus || 'aguardando',
             notes: String(billData.notes || '').trim(),
-            paymentDate: billData.status === 'pago' ? (billData.paymentDate || window.AppConfig.utils.toISODateString()) : null,
-            monthlyStatus: billData.monthlyStatus || {},
+            paymentDate: finalPaymentDate,
+            monthlyOverrides,
+            monthlyStatus: monthlyOverrides,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -176,6 +209,9 @@
 
     /**
      * Atualiza uma conta existente
+     * REGRA DE ISOLAMENTO TEMPORAL (DESPESAS FIXAS):
+     * Qualquer alteração realizada em um determinado mês não altera as informações
+     * dos meses anteriores e nem dos meses seguintes.
      * @param {string} id
      * @param {Object} updates
      * @returns {Promise<Object>}
@@ -191,6 +227,62 @@
           }
 
           const existing = bills[index];
+          const isFixed = existing.expenseType === 'fixa' || updates.expenseType === 'fixa' || existing.category === 'fixas';
+
+          // Determina a chave do mês de referência (YYYY-MM)
+          const targetMonthKey = updates.monthKey || (updates.dueDate && updates.dueDate.includes('-') ? updates.dueDate.substring(0, 7) : null);
+
+          // Se a conta for FIXA e houver um mês de referência informado (sem conversão para variável):
+          // ISOLAMENTO TOTAL: A alteração só afeta ESSE MÊS ESPECÍFICO.
+          // Não altera meses anteriores e nem meses seguintes!
+          if (isFixed && targetMonthKey && updates.expenseType !== 'variavel') {
+            const monthlyOverrides = existing.monthlyOverrides || existing.monthlyStatus || {};
+            const prevMonth = monthlyOverrides[targetMonthKey] || {};
+
+            let monthStatus = updates.status !== undefined ? updates.status : (prevMonth.status || 'pendente');
+            let monthPaymentDate = updates.paymentDate !== undefined ? updates.paymentDate : (prevMonth.paymentDate || null);
+
+            if (monthStatus === 'pago' && !monthPaymentDate) {
+              monthPaymentDate = window.AppConfig.utils.toISODateString();
+            } else if (monthStatus !== 'pago') {
+              monthPaymentDate = null;
+            }
+
+            const monthData = {
+              ...prevMonth,
+              status: monthStatus,
+              paymentDate: monthPaymentDate,
+              amount: updates.amount !== undefined ? Number(updates.amount) : (prevMonth.amount !== undefined ? Number(prevMonth.amount) : Number(existing.amount || 0)),
+              description: updates.description !== undefined ? String(updates.description).trim() : (prevMonth.description || existing.description || ''),
+              location: updates.location !== undefined ? (updates.location === 'CG' ? 'LD' : updates.location) : (prevMonth.location || existing.location || 'LD'),
+              category: updates.category !== undefined ? updates.category : (prevMonth.category || existing.category || 'outros'),
+              paymentMethod: updates.paymentMethod !== undefined ? updates.paymentMethod : (prevMonth.paymentMethod || existing.paymentMethod || 'pix'),
+              notes: updates.notes !== undefined ? String(updates.notes).trim() : (prevMonth.notes !== undefined ? prevMonth.notes : (existing.notes || '')),
+              invoiceNumber: updates.invoiceNumber !== undefined ? String(updates.invoiceNumber).trim() : (prevMonth.invoiceNumber !== undefined ? prevMonth.invoiceNumber : (existing.invoiceNumber || '')),
+              documentNumber: updates.documentNumber !== undefined ? String(updates.documentNumber).trim() : (prevMonth.documentNumber !== undefined ? prevMonth.documentNumber : (existing.documentNumber || ''))
+            };
+
+            if (updates.dueDate && updates.dueDate.includes('-')) {
+              monthData.dueDate = updates.dueDate;
+              monthData.dueDay = parseInt(updates.dueDate.split('-')[2], 10);
+            }
+
+            monthlyOverrides[targetMonthKey] = monthData;
+            existing.monthlyOverrides = monthlyOverrides;
+            existing.monthlyStatus = monthlyOverrides; // Mantém compatibilidade total
+            existing.updatedAt = new Date().toISOString();
+
+            // Parâmetros de exclusão temporal se houver
+            if (updates.excludeFromMonthKey !== undefined) existing.excludeFromMonthKey = updates.excludeFromMonthKey;
+            if (updates.endMonthKey !== undefined) existing.endMonthKey = updates.endMonthKey;
+            if (updates.excludedMonths !== undefined) existing.excludedMonths = updates.excludedMonths;
+
+            bills[index] = existing;
+            localStorage.setItem(this.storageKey, JSON.stringify(bills));
+            return resolve(existing);
+          }
+
+          // Se for conta VARIÁVEL ou alteração estrutural global:
           const updated = {
             ...existing,
             ...updates,
@@ -208,35 +300,10 @@
             }
           }
 
-          const isFixed = updated.expenseType === 'fixa' || updated.category === 'fixas';
-          if (isFixed) {
-            if (!updated.startMonthKey) {
-              const origDueDate = existing.launchDueDate || existing.dueDate || updates.dueDate;
-              updated.startMonthKey = existing.startMonthKey || (origDueDate && origDueDate.includes('-') ? origDueDate.substring(0, 7) : window.AppConfig.utils.toISODateString().substring(0, 7));
-            }
-            if (!updated.launchDueDate) {
-              updated.launchDueDate = existing.launchDueDate || existing.dueDate || updates.dueDate;
-            }
-          }
-
-          // Se a conta for fixa e houver monthKey informada, salva o status daquele mês específico
-          if (isFixed && updates.monthKey) {
-            updated.monthlyStatus = updated.monthlyStatus || {};
-            updated.monthlyStatus[updates.monthKey] = {
-              status: updates.status !== undefined ? updates.status : (updated.monthlyStatus[updates.monthKey]?.status || updated.status || 'pendente'),
-              paymentDate: updates.paymentDate !== undefined ? updates.paymentDate : (updated.monthlyStatus[updates.monthKey]?.paymentDate || updated.paymentDate || null),
-              invoiceNumber: updates.invoiceNumber !== undefined ? updates.invoiceNumber : (updated.monthlyStatus[updates.monthKey]?.invoiceNumber || ''),
-              documentNumber: updates.documentNumber !== undefined ? updates.documentNumber : (updated.monthlyStatus[updates.monthKey]?.documentNumber || '')
-            };
-          }
-
-          // Regra de consistência para data de pagamento no lançamento base
-          if (!isFixed || !updates.monthKey) {
-            if (updated.status === 'pago' && !updated.paymentDate) {
-              updated.paymentDate = window.AppConfig.utils.toISODateString();
-            } else if (updated.status !== 'pago') {
-              updated.paymentDate = null;
-            }
+          if (updated.status === 'pago' && !updated.paymentDate) {
+            updated.paymentDate = window.AppConfig.utils.toISODateString();
+          } else if (updated.status !== 'pago') {
+            updated.paymentDate = null;
           }
 
           bills[index] = updated;
