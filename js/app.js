@@ -56,26 +56,19 @@
     }
 
     /**
-     * Verifica se é o primeiro acesso do dia e exibe o popup automático de contas
-     * que vencem com até 2 dias úteis de antecedência
+     * Exibe o popup de alerta com as contas que vencem nos próximos 2 dias úteis
+     * toda vez que a página for atualizada / recarregada
      */
     checkDailyAlertPopup() {
-      const todayISO = window.AppConfig.utils.toISODateString();
-      const lastSeenDate = localStorage.getItem('contadiaria_last_daily_popup_date');
+      const upcomingBills = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
+      const overdueBills = window.BillService.getOverdueBills(this.allBills);
 
-      if (lastSeenDate !== todayISO) {
-        const upcomingBills = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
-        const overdueBills = window.BillService.getOverdueBills(this.allBills);
-
-        // Se houver contas a vencer nos próximos 2 dias úteis (ou atrasadas)
-        if (upcomingBills.length > 0 || overdueBills.length > 0) {
-          // Marca no LocalStorage para não exibir novamente hoje em refreshs automáticos
-          localStorage.setItem('contadiaria_last_daily_popup_date', todayISO);
-          // Abre o popup de forma suave
-          setTimeout(() => {
-            window.UIManager.openDailyAlertModal(upcomingBills, overdueBills);
-          }, 350);
-        }
+      // Se houver contas a vencer nos próximos 2 dias úteis (ou atrasadas)
+      if (upcomingBills.length > 0 || overdueBills.length > 0) {
+        // Abre o popup automaticamente a cada atualização de página
+        setTimeout(() => {
+          window.UIManager.openDailyAlertModal(upcomingBills, overdueBills);
+        }, 300);
       }
     }
 
@@ -307,73 +300,17 @@
         this.applyFiltersAndRender();
       });
 
-      // Filtro de Status do Pagamento (Pills e Dropdown sincronizados)
+      // Filtro de Status do Pagamento (Dropdown)
       const statusSelect = document.getElementById('filter-status-select');
-      const statusButtons = document.querySelectorAll('.btn-status-filter');
-      
-      const updateStatusUI = (statusVal) => {
-        this.activeFilters.status = statusVal;
-        if (statusSelect && statusSelect.value !== statusVal) {
-          statusSelect.value = statusVal;
-        }
-        statusButtons.forEach((b) => {
-          const isActive = b.dataset.status === statusVal;
-          b.classList.toggle('border-emerald-600', isActive);
-          b.classList.toggle('text-emerald-600', isActive);
-          b.classList.toggle('dark:text-emerald-400', isActive);
-          b.classList.toggle('font-semibold', isActive);
-          b.classList.toggle('bg-emerald-50/70', isActive);
-          b.classList.toggle('dark:bg-emerald-950/30', isActive);
-          b.classList.toggle('text-slate-500', !isActive);
-          b.classList.toggle('dark:text-slate-400', !isActive);
-          b.classList.toggle('border-transparent', !isActive);
-        });
-      };
-
-      statusButtons.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          updateStatusUI(e.currentTarget.dataset.status);
-          this.applyFiltersAndRender();
-        });
-      });
-
       statusSelect?.addEventListener('change', (e) => {
-        updateStatusUI(e.target.value);
+        this.activeFilters.status = e.target.value;
         this.applyFiltersAndRender();
       });
 
-      // Filtro por Local (LD, REC, SE) (Pills e Dropdown sincronizados)
+      // Filtro por Local (LD, REC, SE) (Dropdown)
       const locationSelect = document.getElementById('filter-location-select');
-      const locationButtons = document.querySelectorAll('.btn-location-pill');
-
-      const updateLocationUI = (locVal) => {
-        this.activeFilters.location = locVal;
-        if (locationSelect && locationSelect.value !== locVal) {
-          locationSelect.value = locVal;
-        }
-        locationButtons.forEach((b) => {
-          const isActive = b.dataset.location === locVal;
-          b.classList.toggle('border-emerald-600', isActive);
-          b.classList.toggle('text-emerald-600', isActive);
-          b.classList.toggle('dark:text-emerald-400', isActive);
-          b.classList.toggle('font-bold', isActive);
-          b.classList.toggle('bg-emerald-50/70', isActive);
-          b.classList.toggle('dark:bg-emerald-950/30', isActive);
-          b.classList.toggle('text-slate-500', !isActive);
-          b.classList.toggle('dark:text-slate-400', !isActive);
-          b.classList.toggle('border-transparent', !isActive);
-        });
-      };
-
-      locationButtons.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          updateLocationUI(e.currentTarget.dataset.location);
-          this.applyFiltersAndRender();
-        });
-      });
-
       locationSelect?.addEventListener('change', (e) => {
-        updateLocationUI(e.target.value);
+        this.activeFilters.location = e.target.value;
         this.applyFiltersAndRender();
       });
 
@@ -418,7 +355,7 @@
       });
 
       // =========================================================================
-      // EVENTOS DA SIDEBAR LATERAL ESQUERDA (GERENCIAMENTO & RELATÓRIOS)
+      // EVENTOS DA SIDEBAR LATERAL: PARÂMETROS DE GESTÃO, RELATÓRIOS & AÇÕES
       // =========================================================================
       const updateActiveSidebarBtn = (activeBtn) => {
         document.querySelectorAll('.sidebar-nav-item').forEach((btn) => {
@@ -432,73 +369,118 @@
         window.UIManager.openBillModal('create');
       });
 
-      // 2. Gerenciamento: Todas as Contas
+      // --- SEÇÃO 1: SITUAÇÃO FINANCEIRA (STATUS) ---
+
+      // Todas as Contas
       document.getElementById('sidebar-nav-all')?.addEventListener('click', (e) => {
         updateActiveSidebarBtn(e.currentTarget);
         this.switchTab('contas');
         this.resetFilters();
       });
 
-      // 3. Gerenciamento: Aguardando Pagamento
+      // Aguardando Pagamento
       document.getElementById('sidebar-nav-pending')?.addEventListener('click', (e) => {
         updateActiveSidebarBtn(e.currentTarget);
         this.switchTab('contas');
-        this.activeFilters.status = 'pendente';
-        this.activeFilters.period = 'todos';
-        const filterStatusSelect = document.getElementById('filter-status-select');
-        if (filterStatusSelect) filterStatusSelect.value = 'pendente';
-        document.querySelectorAll('.btn-status-filter').forEach((b) => {
-          const isPending = b.dataset.status === 'pendente';
-          b.classList.toggle('border-emerald-600', isPending);
-          b.classList.toggle('text-emerald-600', isPending);
-          b.classList.toggle('dark:text-emerald-400', isPending);
-          b.classList.toggle('font-semibold', isPending);
-          b.classList.toggle('bg-emerald-50/70', isPending);
-          b.classList.toggle('dark:bg-emerald-950/30', isPending);
-          b.classList.toggle('border-transparent', !isPending);
-          b.classList.toggle('text-slate-500', !isPending);
-        });
-        this.applyFiltersAndRender();
+        this.resetFiltersKeep({ status: 'pendente', period: 'todos' });
       });
 
-      // 4. Gerenciamento: Vencidas / Urgentes
+      // Vencidas / Urgentes
       document.getElementById('sidebar-nav-overdue')?.addEventListener('click', (e) => {
         updateActiveSidebarBtn(e.currentTarget);
         this.switchTab('contas');
         this.filterUrgentOnly();
       });
 
-      // 5. Gerenciamento: Pagas / Quitações
+      // Vencendo em 2 Dias (Lembrete)
+      document.getElementById('sidebar-nav-due-2days')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        openDailyAlertHelper();
+      });
+
+      // Pagas / Quitações
       document.getElementById('sidebar-nav-paid')?.addEventListener('click', (e) => {
         updateActiveSidebarBtn(e.currentTarget);
         this.switchTab('contas');
-        this.activeFilters.status = 'pago';
-        this.activeFilters.period = 'todos';
-        const filterStatusSelect = document.getElementById('filter-status-select');
-        if (filterStatusSelect) filterStatusSelect.value = 'pago';
-        document.querySelectorAll('.btn-status-filter').forEach((b) => {
-          const isPaid = b.dataset.status === 'pago';
-          b.classList.toggle('border-emerald-600', isPaid);
-          b.classList.toggle('text-emerald-600', isPaid);
-          b.classList.toggle('dark:text-emerald-400', isPaid);
-          b.classList.toggle('font-semibold', isPaid);
-          b.classList.toggle('bg-emerald-50/70', isPaid);
-          b.classList.toggle('dark:bg-emerald-950/30', isPaid);
-          b.classList.toggle('border-transparent', !isPaid);
-          b.classList.toggle('text-slate-500', !isPaid);
-        });
-        this.applyFiltersAndRender();
+        this.resetFiltersKeep({ status: 'pago', period: 'todos' });
       });
 
-      // 6. Relatórios: Painel Geral & Gráficos
+      // --- SEÇÃO 2: PARÂMETROS POR UNIDADE (LOCAL LD, REC, SE) ---
+
+      // Unidade LD
+      document.getElementById('sidebar-nav-ld')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ location: 'LD' });
+      });
+
+      // Unidade REC
+      document.getElementById('sidebar-nav-rec')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ location: 'REC' });
+      });
+
+      // Unidade SE
+      document.getElementById('sidebar-nav-se')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ location: 'SE' });
+      });
+
+      // --- SEÇÃO 3: PARÂMETROS POR NATUREZA (F / V) ---
+
+      // Despesas Fixas (F)
+      document.getElementById('sidebar-nav-fixed')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ expenseType: 'fixa' });
+      });
+
+      // Despesas Variáveis (V)
+      document.getElementById('sidebar-nav-variable')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ expenseType: 'variavel' });
+      });
+
+      // --- SEÇÃO 4: CONTROLE FISCAL & NF ---
+
+      // Aguardando NF / Doc
+      document.getElementById('sidebar-nav-missing-nf')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('contas');
+        this.resetFiltersKeep({ invoiceStatus: 'aguardando', period: 'todos' });
+      });
+
+      // --- SEÇÃO 5: RELATÓRIOS & ANÁLISES EXECUTIVAS ---
+
+      // Painel de Gráficos
       document.getElementById('sidebar-report-overview')?.addEventListener('click', (e) => {
         updateActiveSidebarBtn(e.currentTarget);
         this.switchTab('relatorios');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
 
-      // 7. Relatórios: Demonstrativo Executivo
-      document.getElementById('sidebar-report-statement')?.addEventListener('click', () => {
+      // Cronograma Mensal
+      document.getElementById('sidebar-report-monthly')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('relatorios');
+        const sec = document.getElementById('report-monthly-section');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // Top Maiores Despesas
+      document.getElementById('sidebar-report-top')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
+        this.switchTab('relatorios');
+        const sec = document.getElementById('report-top-bills-section');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // Demonstrativo Executivo
+      document.getElementById('sidebar-report-statement')?.addEventListener('click', (e) => {
+        updateActiveSidebarBtn(e.currentTarget);
         const kpis = window.BillService.calculateKPIs(this.allBills, 'todos');
         window.UIManager.openStatementModal(this.allBills, kpis);
       });
@@ -601,7 +583,14 @@
 
       // Modal de Exclusão
       document.getElementById('btn-cancel-delete')?.addEventListener('click', () => window.UIManager.closeDeleteModal());
+      document.getElementById('btn-cancel-delete-fixed')?.addEventListener('click', () => window.UIManager.closeDeleteModal());
       document.getElementById('btn-confirm-delete')?.addEventListener('click', async () => {
+        await this.handleDeleteConfirm();
+      });
+      document.getElementById('btn-delete-fixed-from-month')?.addEventListener('click', async () => {
+        await this.handleDeleteFixedFromMonth();
+      });
+      document.getElementById('btn-delete-fixed-all-months')?.addEventListener('click', async () => {
         await this.handleDeleteConfirm();
       });
 
@@ -1459,12 +1448,39 @@
     async handlePromptDelete(id) {
       const bill = await window.StorageService.getById(id);
       if (bill) {
-        window.UIManager.openDeleteModal(bill);
+        window.UIManager.openDeleteModal(bill, {
+          selectedYear: this.activeFilters?.selectedYear,
+          selectedMonth: this.activeFilters?.selectedMonth
+        });
       }
     }
 
     /**
-     * Confirmação efetiva da exclusão
+     * Exclui despesa fixa daquele mês para frente, preservando integralmente os meses anteriores
+     */
+    async handleDeleteFixedFromMonth() {
+      const bill = window.UIManager.currentBillToDelete;
+      if (!bill) return;
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
+      const month = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
+      const fromMonthKey = `${year}-${pad(month + 1)}`;
+      const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês Atual';
+
+      try {
+        await window.StorageService.excludeFixedFromMonth(bill.id, fromMonthKey);
+        window.UIManager.closeDeleteModal();
+        window.UIManager.showToast(`Despesa fixa "${bill.description}" excluída a partir de ${monthName}/${year} em diante! Histórico dos meses anteriores preservado.`, 'success');
+        await this.loadData();
+      } catch (err) {
+        console.error('Falha ao excluir despesa fixa a partir do mês:', err);
+        window.UIManager.showToast('Erro ao excluir despesa fixa.', 'error');
+      }
+    }
+
+    /**
+     * Confirmação efetiva da exclusão completa
      */
     async handleDeleteConfirm() {
       const bill = window.UIManager.currentBillToDelete;
@@ -1503,17 +1519,6 @@
         }
       });
 
-      // Atualiza botões visuais de status
-      document.querySelectorAll('.btn-status-filter').forEach((btn) => {
-        if (btn.dataset.status === 'atrasado') {
-          btn.classList.add('border-emerald-600', 'text-emerald-600', 'dark:text-emerald-400', 'font-semibold', 'bg-emerald-50/70');
-          btn.classList.remove('text-slate-500', 'dark:text-slate-400', 'border-transparent');
-        } else {
-          btn.classList.remove('border-emerald-600', 'text-emerald-600', 'dark:text-emerald-400', 'font-semibold', 'bg-emerald-50/70');
-          btn.classList.add('text-slate-500', 'dark:text-slate-400', 'border-transparent');
-        }
-      });
-
       this.applyFiltersAndRender();
 
       // Scroll suave até a tabela
@@ -1526,64 +1531,57 @@
     /**
      * Reseta todos os filtros para o padrão
      */
-    resetFilters() {
+    /**
+     * Reseta filtros mantendo apenas os parâmetros especificados (ex: { location: 'LD' })
+     * @param {Object} overrides
+     */
+    resetFiltersKeep(overrides = {}) {
       const now = new Date();
       this.activeFilters = {
-        period: 'mes',
-        status: 'todos',
-        location: 'todos',
-        expenseType: 'todos',
-        category: 'todos',
-        paymentMethod: 'todos',
+        period: overrides.period !== undefined ? overrides.period : 'mes',
+        status: overrides.status !== undefined ? overrides.status : 'todos',
+        location: overrides.location !== undefined ? overrides.location : 'todos',
+        expenseType: overrides.expenseType !== undefined ? overrides.expenseType : 'todos',
+        category: overrides.category !== undefined ? overrides.category : 'todos',
+        paymentMethod: overrides.paymentMethod !== undefined ? overrides.paymentMethod : 'todos',
+        invoiceStatus: overrides.invoiceStatus !== undefined ? overrides.invoiceStatus : 'todos',
         search: '',
         customStart: null,
         customEnd: null,
         sortBy: 'dueDate_asc',
-        selectedYear: now.getFullYear(),
-        selectedMonth: now.getMonth()
+        selectedYear: this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : now.getFullYear(),
+        selectedMonth: this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : now.getMonth(),
+        ...overrides
       };
 
       const searchInput = document.getElementById('search-input');
       if (searchInput) searchInput.value = '';
 
       const filterStatusSelect = document.getElementById('filter-status-select');
-      if (filterStatusSelect) filterStatusSelect.value = 'todos';
+      if (filterStatusSelect) filterStatusSelect.value = this.activeFilters.status;
 
       const filterLocSelect = document.getElementById('filter-location-select');
-      if (filterLocSelect) filterLocSelect.value = 'todos';
+      if (filterLocSelect) filterLocSelect.value = this.activeFilters.location;
 
       const sortBy = document.getElementById('sort-by');
       if (sortBy) sortBy.value = 'dueDate_asc';
 
       document.querySelectorAll('.btn-period-filter').forEach((btn) => {
-        const isMes = btn.dataset.period === 'mes';
-        btn.classList.toggle('bg-emerald-600', isMes);
-        btn.classList.toggle('text-white', isMes);
-        btn.classList.toggle('shadow-xs', isMes);
-        btn.classList.toggle('text-slate-600', !isMes);
-      });
-
-      document.querySelectorAll('.btn-status-filter').forEach((btn) => {
-        const isTodos = btn.dataset.status === 'todos';
-        btn.classList.toggle('border-emerald-600', isTodos);
-        btn.classList.toggle('text-emerald-600', isTodos);
-        btn.classList.toggle('font-semibold', isTodos);
-        btn.classList.toggle('bg-emerald-50/70', isTodos);
-        btn.classList.toggle('border-transparent', !isTodos);
-        btn.classList.toggle('text-slate-500', !isTodos);
-      });
-
-      document.querySelectorAll('.btn-location-pill').forEach((btn) => {
-        const isTodos = btn.dataset.location === 'todos';
-        btn.classList.toggle('border-emerald-600', isTodos);
-        btn.classList.toggle('text-emerald-600', isTodos);
-        btn.classList.toggle('font-bold', isTodos);
-        btn.classList.toggle('bg-emerald-50/70', isTodos);
-        btn.classList.toggle('border-transparent', !isTodos);
-        btn.classList.toggle('text-slate-500', !isTodos);
+        const isSelected = btn.dataset.period === this.activeFilters.period;
+        btn.classList.toggle('bg-emerald-600', isSelected);
+        btn.classList.toggle('text-white', isSelected);
+        btn.classList.toggle('shadow-xs', isSelected);
+        btn.classList.toggle('text-slate-600', !isSelected);
       });
 
       this.applyFiltersAndRender();
+    }
+
+    /**
+     * Reseta todos os filtros para o padrão
+     */
+    resetFilters() {
+      this.resetFiltersKeep({});
     }
 
     /**

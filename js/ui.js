@@ -1015,11 +1015,11 @@
 
           return `
             <div class="p-3 sm:p-3.5 rounded-xl border ${borderClass} ${bgClass} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all hover:shadow-xs" data-bill-id="${bill.id}">
-              <div class="flex items-start gap-2.5 min-w-0">
+              <div class="flex items-start gap-2.5 min-w-0 flex-1">
                 <div class="w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                   <i data-lucide="${bDays === 0 ? 'alert-triangle' : bDays === 1 ? 'clock' : 'calendar-clock'}" class="w-4 h-4"></i>
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${urgencyBadgeClass}">
                       ${urgencyLabel}
@@ -1051,7 +1051,7 @@
                 </span>
                 <button
                   type="button"
-                  class="btn-daily-alert-quick-pay px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                  class="btn-daily-alert-quick-pay px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                   data-id="${bill.id}"
                   title="Marcar esta conta como Paga com a data de hoje"
                 >
@@ -1118,21 +1118,50 @@
     }
 
     /**
-     * Modal de Confirmação de Exclusão
+     * Modal de Confirmação de Exclusão (com suporte a despesas fixas recorrentes)
+     * @param {Object} bill
+     * @param {Object} context { selectedYear, selectedMonth }
      */
-    openDeleteModal(bill) {
+    openDeleteModal(bill, context = {}) {
       this.currentBillToDelete = bill;
+      this.currentDeleteContext = context;
       const modal = document.getElementById('delete-modal');
       const descEl = document.getElementById('delete-bill-description');
       const amountEl = document.getElementById('delete-bill-amount');
+      const modalTitle = document.getElementById('delete-modal-title');
+      const modalBadge = document.getElementById('delete-modal-badge');
+      const fixedOptions = document.getElementById('delete-fixed-options');
+      const standardActions = document.getElementById('delete-standard-actions');
+      const fixedMonthLabel = document.getElementById('delete-fixed-month-label');
 
       if (!modal) return;
 
       if (descEl) descEl.textContent = bill.description;
       if (amountEl) amountEl.textContent = window.AppConfig.utils.formatBRL(bill.amount);
 
+      const isFixed = bill.expenseType === 'fixa' || bill.category === 'fixas';
+      const year = context.selectedYear !== undefined ? Number(context.selectedYear) : new Date().getFullYear();
+      const month = context.selectedMonth !== undefined ? Number(context.selectedMonth) : new Date().getMonth();
+      const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês Atual';
+
+      if (isFixed && fixedOptions && standardActions) {
+        if (modalBadge) modalBadge.classList.remove('hidden');
+        if (modalTitle) modalTitle.textContent = 'Excluir Despesa Fixa?';
+        fixedOptions.classList.remove('hidden');
+        standardActions.classList.add('hidden');
+        if (fixedMonthLabel) {
+          fixedMonthLabel.textContent = `${monthName}/${year}`;
+        }
+      } else {
+        if (modalBadge) modalBadge.classList.add('hidden');
+        if (modalTitle) modalTitle.textContent = 'Excluir Conta?';
+        if (fixedOptions) fixedOptions.classList.add('hidden');
+        if (standardActions) standardActions.classList.remove('hidden');
+      }
+
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
+      if (window.lucide) window.lucide.createIcons();
     }
 
     closeDeleteModal() {
@@ -1180,6 +1209,7 @@
 
     /**
      * Atualiza os contadores e badges numéricos da Sidebar Lateral Esquerda
+     * com todos os parâmetros de gestão (Status, Unidade LD/REC/SE, F/V e Fiscal)
      * @param {Array<Object>} bills
      */
     updateSidebarBadges(bills) {
@@ -1190,11 +1220,21 @@
       let paidCount = 0;
       let pendingTotal = 0;
 
+      let ldCount = 0;
+      let recCount = 0;
+      let seCount = 0;
+
+      let fixedCount = 0;
+      let variableCount = 0;
+      let missingNfCount = 0;
+
       const todayISO = window.AppConfig.utils.toISODateString();
       const enriched = window.BillService.enrichBills(bills);
 
       enriched.forEach((b) => {
         if (b.isPriorToLaunch) return;
+
+        // 1. Status Financeiro
         if (b.effectiveStatus === 'pago') {
           paidCount++;
         } else {
@@ -1209,8 +1249,24 @@
         if (b.dueDate === todayISO) {
           todayCount++;
         }
+
+        // 2. Parâmetro por Unidade (Local LD, REC, SE)
+        const loc = b.location === 'CG' ? 'LD' : (b.location || 'LD');
+        if (loc === 'LD') ldCount++;
+        else if (loc === 'REC') recCount++;
+        else if (loc === 'SE') seCount++;
+
+        // 3. Parâmetro por Natureza (Fixa F / Variável V)
+        if (b.expenseType === 'fixa') fixedCount++;
+        else variableCount++;
+
+        // 4. Parâmetro Fiscal (Aguardando NF / Doc)
+        if (!b.invoiceNumber && !b.documentNumber) {
+          missingNfCount++;
+        }
       });
 
+      // Atualiza Badges de Situação Financeira
       const totalBadge = document.getElementById('sidebar-total-badge');
       if (totalBadge) totalBadge.textContent = `${totalCount} contas`;
 
@@ -1223,9 +1279,6 @@
       const countOverdue = document.getElementById('sidebar-count-overdue');
       if (countOverdue) countOverdue.textContent = overdueCount;
 
-      const countToday = document.getElementById('sidebar-count-today');
-      if (countToday) countToday.textContent = todayCount;
-
       const countPaid = document.getElementById('sidebar-count-paid');
       if (countPaid) countPaid.textContent = paidCount;
 
@@ -1233,9 +1286,32 @@
       const count2Days = document.getElementById('sidebar-count-due-2days');
       if (count2Days) count2Days.textContent = due2DaysBills.length;
 
+      // Atualiza Badges de Unidade (Local)
+      const countLdEl = document.getElementById('sidebar-count-ld');
+      if (countLdEl) countLdEl.textContent = ldCount;
+
+      const countRecEl = document.getElementById('sidebar-count-rec');
+      if (countRecEl) countRecEl.textContent = recCount;
+
+      const countSeEl = document.getElementById('sidebar-count-se');
+      if (countSeEl) countSeEl.textContent = seCount;
+
+      // Atualiza Badges de Classificação (F/V)
+      const countFixedEl = document.getElementById('sidebar-count-fixed');
+      if (countFixedEl) countFixedEl.textContent = fixedCount;
+
+      const countVariableEl = document.getElementById('sidebar-count-variable');
+      if (countVariableEl) countVariableEl.textContent = variableCount;
+
+      // Atualiza Badge Fiscal (Aguardando NF/Doc)
+      const countMissingNfEl = document.getElementById('sidebar-count-missing-nf');
+      if (countMissingNfEl) countMissingNfEl.textContent = missingNfCount;
+
+      // Popover do sino no cabeçalho
       const popoverAlertBadge = document.getElementById('popover-alert-count-badge');
       if (popoverAlertBadge) popoverAlertBadge.textContent = due2DaysBills.length;
 
+      // Card de Total a Pagar no rodapé da Sidebar
       const pendingEl = document.getElementById('sidebar-pending-total');
       if (pendingEl) pendingEl.textContent = window.AppConfig.utils.formatBRL(pendingTotal);
     }

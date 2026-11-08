@@ -229,7 +229,7 @@
           <span>+ Nova Despesa</span>
         </button>
 
-        <!-- SEÇÃO 1: GERENCIAMENTO DE CONTAS A PAGAR -->
+        <!-- SEÇÃO 1: CONTAS A PAGAR -->
         <div class="space-y-1">
           <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
             Contas a Pagar
@@ -239,75 +239,18 @@
           <button
             type="button"
             id="sidebar-nav-all"
-            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 active"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 active"
             data-action="all"
           >
             <div class="flex items-center gap-2">
-              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i>
               <span>Todas as Contas</span>
             </div>
-            <span id="sidebar-count-all" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
-          </button>
-
-          <!-- Aguardando Pagamento -->
-          <button
-            type="button"
-            id="sidebar-nav-pending"
-            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
-            data-action="pending"
-          >
-            <div class="flex items-center gap-2">
-              <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
-              <span>Aguardando Pagamento</span>
-            </div>
-            <span id="sidebar-count-pending" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">0</span>
-          </button>
-
-          <!-- Vencidas / Urgentes -->
-          <button
-            type="button"
-            id="sidebar-nav-overdue"
-            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
-            data-action="overdue"
-          >
-            <div class="flex items-center gap-2">
-              <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-rose-500"></i>
-              <span>Vencidas / Urgentes</span>
-            </div>
-            <span id="sidebar-count-overdue" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">0</span>
-          </button>
-
-          <!-- Lembrete (Vencendo em 2 Dias Úteis) -->
-          <button
-            type="button"
-            id="sidebar-nav-due-2days"
-            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
-            data-action="due-2days"
-            title="Abrir popup com contas que vencem nos próximos 2 dias úteis"
-          >
-            <div class="flex items-center gap-2">
-              <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-500"></i>
-              <span>Vencendo em 2 Dias</span>
-            </div>
-            <span id="sidebar-count-due-2days" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">0</span>
-          </button>
-
-          <!-- Contas Pagas / Histórico -->
-          <button
-            type="button"
-            id="sidebar-nav-paid"
-            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
-            data-action="paid"
-          >
-            <div class="flex items-center gap-2">
-              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
-              <span>Pagas / Quitações</span>
-            </div>
-            <span id="sidebar-count-paid" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">0</span>
+            <span id="sidebar-count-all" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">0</span>
           </button>
         </div>
 
-        <!-- SEÇÃO 2: RELATÓRIOS & DEMONSTRATIVO -->
+        <!-- SEÇÃO 2: RELATÓRIOS -->
         <div class="space-y-1 pt-2.5 border-t border-slate-100 dark:border-slate-800">
           <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
             Relatórios
@@ -317,11 +260,11 @@
           <button
             type="button"
             id="sidebar-report-overview"
-            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
             data-report="overview"
             title="Gráficos analíticos, balanço e cronograma"
           >
-            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-500"></i>
+            <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
             <span>Painel de Gráficos & Relatórios</span>
           </button>
 
@@ -329,11 +272,11 @@
           <button
             type="button"
             id="sidebar-report-statement"
-            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
+            class="sidebar-nav-item w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300"
             data-report="statement"
             title="Extrato executivo completo para impressão ou cópia"
           >
-            <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-600"></i>
+            <i data-lucide="file-text" class="w-4 h-4 text-rose-600"></i>
             <span>Demonstrativo Executivo</span>
           </button>
         </div>
@@ -348,9 +291,9 @@
           <button
             type="button"
             id="sidebar-action-csv"
-            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
           >
-            <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
             <span>Baixar Planilha (CSV)</span>
           </button>
 
@@ -358,9 +301,9 @@
           <button
             type="button"
             id="sidebar-action-copy"
-            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
           >
-            <i data-lucide="clipboard-copy" class="w-3.5 h-3.5 text-slate-500"></i>
+            <i data-lucide="clipboard-copy" class="w-4 h-4 text-slate-500"></i>
             <span>Copiar Resumo (WhatsApp)</span>
           </button>
 
@@ -368,9 +311,9 @@
           <button
             type="button"
             id="sidebar-action-print"
-            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
           >
-            <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
+            <i data-lucide="printer" class="w-4 h-4 text-slate-500"></i>
             <span>Imprimir Relatório (A4)</span>
           </button>
 
@@ -378,10 +321,10 @@
           <button
             type="button"
             id="sidebar-action-clear-all"
-            class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+            class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
             title="Remove todas as contas e despesas cadastradas"
           >
-            <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-500"></i>
+            <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
             <span>Limpar Todas as Despesas</span>
           </button>
         </div>
@@ -667,111 +610,11 @@
     <div id="view-contas" class="space-y-2.5">
       
       <!-- Barra de Filtros, Pesquisa e Ações Compacta -->
-      <div class="bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
-        
-        <!-- Linha 1: Filtro de Status + Filtro de Local (LD, REC, SE) + Ações de Exportação -->
-        <div class="flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-          
-          <div class="flex flex-wrap items-center gap-2.5">
-            <!-- Filtro por Status do Pagamento (Pills Compactos) -->
-            <div class="flex items-center gap-1 overflow-x-auto text-xs font-semibold">
-              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1">Status:</span>
-              <button
-                type="button"
-                data-status="todos"
-                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30 transition-all whitespace-nowrap"
-              >
-                Todas
-              </button>
-              <button
-                type="button"
-                data-status="pendente"
-                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
-              >
-                Aguardando Pagamento
-              </button>
-              <button
-                type="button"
-                data-status="pago"
-                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
-              >
-                Pagas
-              </button>
-              <button
-                type="button"
-                data-status="atrasado"
-                class="btn-status-filter px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap"
-              >
-                Atrasadas
-              </button>
-            </div>
-
-            <!-- Separador Vertical -->
-            <div class="h-4 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
-
-            <!-- Filtro por Local (LD, REC, SE) -->
-            <div class="flex items-center gap-1 overflow-x-auto text-xs font-semibold">
-              <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1">Local:</span>
-              <button
-                type="button"
-                data-location="todos"
-                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30 transition-all whitespace-nowrap"
-              >
-                Todos
-              </button>
-              <button
-                type="button"
-                data-location="LD"
-                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
-              >
-                LD
-              </button>
-              <button
-                type="button"
-                data-location="REC"
-                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
-              >
-                REC
-              </button>
-              <button
-                type="button"
-                data-location="SE"
-                class="btn-location-pill px-2.5 py-1 rounded-md border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all whitespace-nowrap font-bold"
-              >
-                SE
-              </button>
-            </div>
-          </div>
-
-          <!-- Botões de Exportação e Relatório Rápido -->
-          <div class="flex items-center gap-1.5 ml-auto">
-            <button
-              type="button"
-              id="btn-copy-summary"
-              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
-              title="Copia resumo em texto para WhatsApp / E-mail"
-            >
-              <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-400"></i>
-              <span>Copiar Resumo</span>
-            </button>
-
-            <button
-              type="button"
-              id="btn-export-csv"
-              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all"
-              title="Baixar planilha CSV compatível com Excel"
-            >
-              <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
-              <span>Exportar CSV</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Linha 2: Busca por Texto e Dropdowns de Filtro (Status, Local LD/REC/SE e Ordenação) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2 text-xs">
+      <div class="bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex flex-col md:flex-row items-center gap-2 text-xs">
           
           <!-- Input de Busca -->
-          <div class="lg:col-span-5 relative">
+          <div class="w-full md:flex-1 relative min-w-[200px]">
             <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             <input
               type="text"
@@ -789,10 +632,10 @@
           </div>
 
           <!-- Filtro de Status do Pagamento (Dropdown) -->
-          <div class="lg:col-span-3">
+          <div class="w-full sm:w-auto min-w-[185px]">
             <select
               id="filter-status-select"
-              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-semibold focus-ring"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-semibold focus-ring cursor-pointer"
               title="Filtrar por Status do Pagamento"
             >
               <option value="todos">Status: Todos</option>
@@ -803,10 +646,10 @@
           </div>
 
           <!-- Filtro por Local (LD, REC, SE) (Dropdown) -->
-          <div class="lg:col-span-2">
+          <div class="w-full sm:w-auto min-w-[135px]">
             <select
               id="filter-location-select"
-              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-bold focus-ring"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs text-slate-800 dark:text-slate-100 font-bold focus-ring cursor-pointer"
               title="Filtrar por Local (LD, REC, SE)"
             >
               <option value="todos">Local: Todos</option>
@@ -817,10 +660,10 @@
           </div>
 
           <!-- Ordenação -->
-          <div class="lg:col-span-2">
+          <div class="w-full sm:w-auto min-w-[165px]">
             <select
               id="sort-by"
-              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 focus-ring font-medium"
+              class="w-full py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 focus-ring font-medium cursor-pointer"
             >
               <option value="dueDate_asc">Vencimento (Próximo)</option>
               <option value="dueDate_desc">Vencimento (Distante)</option>
@@ -829,6 +672,30 @@
               <option value="description_asc">Descrição (A-Z)</option>
             </select>
           </div>
+
+          <!-- Botões de Ação Rápida (Copiar Resumo & Exportar CSV) -->
+          <div class="flex items-center gap-1.5 shrink-0 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              id="btn-copy-summary"
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all whitespace-nowrap"
+              title="Copia resumo em texto para WhatsApp / E-mail"
+            >
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Copiar Resumo</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-export-csv"
+              class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all whitespace-nowrap"
+              title="Baixar planilha CSV compatível com Excel"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Exportar CSV</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -1019,9 +886,9 @@
   <!-- ========================================================================= -->
   <div
     id="daily-alert-modal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 modal-backdrop overflow-y-auto"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-xs modal-backdrop overflow-y-auto"
   >
-    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900/60 animate-modal-in overflow-hidden my-4 sm:my-8 flex flex-col max-h-[92vh]">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl sm:max-w-3xl rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900/60 animate-modal-in overflow-hidden my-auto flex flex-col max-h-[90vh]">
       
       <!-- Cabeçalho do Modal com Banner Chamativo -->
       <div class="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex items-center justify-between shrink-0">
@@ -1030,12 +897,12 @@
             <i data-lucide="bell-ring" class="w-5 h-5"></i>
           </div>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <h3 class="font-extrabold text-base sm:text-lg text-white leading-tight">
                 Lembrete Diário de Vencimentos
               </h3>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider">
-                1º Acesso do Dia
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider shadow-2xs">
+                Atenção: 2 Dias Úteis
               </span>
             </div>
             <p class="text-xs text-emerald-100 mt-0.5" id="daily-alert-subtitle">
@@ -1046,7 +913,7 @@
         <button
           type="button"
           id="btn-close-daily-alert"
-          class="p-2 text-emerald-100 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+          class="p-2 text-emerald-100 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           title="Fechar Lembrete"
         >
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -1054,7 +921,7 @@
       </div>
 
       <!-- Resumo Financeiro do Alerta no Topo -->
-      <div class="p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border-b border-emerald-100 dark:border-emerald-900/60 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div class="px-5 py-3.5 bg-emerald-50/80 dark:bg-emerald-950/40 border-b border-emerald-100 dark:border-emerald-900/60 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div class="flex items-center gap-2">
           <i data-lucide="calendar" class="w-4 h-4 text-emerald-700 dark:text-emerald-400"></i>
           <span class="text-xs font-bold text-emerald-900 dark:text-emerald-200" id="daily-alert-today-label">
@@ -1075,55 +942,47 @@
       </div>
 
       <!-- Aviso se houver contas já vencidas -->
-      <div id="daily-alert-overdue-banner" class="hidden mx-4 mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-between gap-2 shrink-0">
-        <div class="flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300">
+      <div id="daily-alert-overdue-banner" class="hidden mx-5 mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300 min-w-0">
           <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-600 shrink-0"></i>
-          <span id="daily-alert-overdue-text">Você também possui contas atrasadas pendentes.</span>
+          <span id="daily-alert-overdue-text" class="truncate">Você também possui contas atrasadas pendentes.</span>
         </div>
         <button
           type="button"
           id="btn-daily-alert-show-overdue"
-          class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline whitespace-nowrap"
+          class="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:underline whitespace-nowrap shrink-0 cursor-pointer"
         >
           Filtrar atrasadas &rarr;
         </button>
       </div>
 
       <!-- Corpo com Lista de Contas com Rolagem -->
-      <div class="p-4 overflow-y-auto flex-1 space-y-2.5" id="daily-alert-list">
+      <div class="p-5 overflow-y-auto flex-1 space-y-2.5" id="daily-alert-list">
         <!-- Itens preenchidos dinamicamente via JS -->
       </div>
 
-      <!-- Rodapé do Modal -->
-      <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-        <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 text-center sm:text-left flex-wrap">
-          <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-          <span>Exibido automaticamente no 1º acesso de cada dia.</span>
-          <button
-            type="button"
-            id="btn-reset-daily-alert-seen"
-            class="underline text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 cursor-pointer ml-1 font-semibold"
-            title="Permite que o popup abra novamente na próxima inicialização hoje"
-          >
-            (Simular 1º acesso)
-          </button>
+      <!-- Rodapé do Modal (Enquadramento Perfeito e Responsivo) -->
+      <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 min-w-0 flex-1">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+          <span class="leading-tight">Aviso automático de despesas no prazo de 2 dias úteis.</span>
         </div>
 
-        <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
           <button
             type="button"
             id="btn-daily-alert-filter-table"
-            class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-800 text-xs font-bold transition-all"
+            class="px-3.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-slate-800 text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer"
           >
             Ver Todas na Tabela
           </button>
           <button
             type="button"
             id="btn-confirm-daily-alert"
-            class="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95"
+            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <i data-lucide="check" class="w-4 h-4"></i>
-            <span>Entendido / Fechar</span>
+            <span>Entendido</span>
           </button>
         </div>
       </div>
@@ -1518,34 +1377,99 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO                                            -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO (SUPORTA DESPESAS FIXAS E VARIÁVEIS)        -->
   <!-- ========================================================================= -->
   <div
     id="delete-modal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 modal-backdrop"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs modal-backdrop"
   >
-    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-modal-in space-y-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 animate-modal-in space-y-4 my-auto">
       <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
         <i data-lucide="trash-2" class="w-6 h-6"></i>
       </div>
       <div class="text-center">
-        <h4 class="text-lg font-bold text-slate-900 dark:text-white">Excluir Conta?</h4>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Tem certeza de que deseja remover <strong id="delete-bill-description" class="text-slate-800 dark:text-slate-200"></strong> no valor de <strong id="delete-bill-amount" class="text-slate-800 dark:text-slate-200"></strong>? Esta ação não pode ser desfeita.
+        <div id="delete-modal-badge" class="hidden mb-1.5 flex justify-center">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+            Despesa Fixa Recorrente
+          </span>
+        </div>
+        <h4 class="text-lg font-bold text-slate-900 dark:text-white" id="delete-modal-title">Excluir Conta?</h4>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="delete-modal-desc-container">
+          Tem certeza de que deseja remover <strong id="delete-bill-description" class="text-slate-800 dark:text-slate-200"></strong> no valor de <strong id="delete-bill-amount" class="text-slate-800 dark:text-slate-200"></strong>?
         </p>
       </div>
-      <div class="grid grid-cols-2 gap-3 pt-2">
+
+      <!-- OPÇÕES DE EXCLUSÃO PARA DESPESA FIXA (DAQUELE MÊS PARA FRENTE VS TODOS OS MESES) -->
+      <div id="delete-fixed-options" class="hidden space-y-2.5 pt-1">
+        <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-[11px] text-amber-900 dark:text-amber-200">
+          <div class="flex items-center gap-1.5 font-bold mb-0.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-700"></i>
+            <span>Mês de Referência: <span id="delete-fixed-month-label" class="underline">Novembro/2026</span></span>
+          </div>
+          <span>Esta despesa se repete nos meses. Escolha como deseja realizar a exclusão:</span>
+        </div>
+
+        <!-- Botão Primário: Excluir Deste Mês em Diante (Preserva anteriores) -->
+        <button
+          type="button"
+          id="btn-delete-fixed-from-month"
+          class="w-full p-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-left shadow-xs transition-all active:scale-[0.99] cursor-pointer flex items-start gap-3 group"
+        >
+          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+            <i data-lucide="calendar-x" class="w-4 h-4 text-white"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+              <span>Excluir Deste Mês em Diante</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-white text-rose-800 font-extrabold uppercase">Recomendado</span>
+            </div>
+            <p class="text-[11px] text-rose-100 mt-0.5 leading-tight">
+              Exclui a partir deste mês e de todos os seguintes. <strong>Meses anteriores continuam salvos no histórico.</strong>
+            </p>
+          </div>
+        </button>
+
+        <!-- Botão Secundário: Excluir de Todos os Meses -->
+        <button
+          type="button"
+          id="btn-delete-fixed-all-months"
+          class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-all active:scale-[0.99] cursor-pointer flex items-start gap-2.5 text-slate-700 dark:text-slate-300"
+        >
+          <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 mt-0.5 text-slate-500">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-semibold text-xs text-slate-800 dark:text-slate-200">
+              Excluir de Todos os Meses
+            </div>
+            <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              Apaga a despesa completamente de todo o sistema (inclusive meses anteriores).
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          id="btn-cancel-delete-fixed"
+          class="w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+      </div>
+
+      <!-- BOTÕES PADRÃO (PARA DESPESAS VARIÁVEIS) -->
+      <div id="delete-standard-actions" class="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
           id="btn-cancel-delete"
-          class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-all"
+          class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-all cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="button"
           id="btn-confirm-delete"
-          class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-md shadow-rose-500/20 transition-all"
+          class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-md shadow-rose-500/20 transition-all cursor-pointer"
         >
           Sim, Excluir
         </button>

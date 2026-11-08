@@ -267,6 +267,53 @@
     }
 
     /**
+     * Exclui despesa fixa a partir de determinado mês em diante (daquele mês para frente)
+     * Preserva integralmente o histórico de todos os meses anteriores ao mês informado.
+     * @param {string} id
+     * @param {string} fromMonthKey YYYY-MM
+     * @returns {Promise<Object|boolean>}
+     */
+    async excludeFixedFromMonth(id, fromMonthKey) {
+      const bill = await this.getById(id);
+      if (!bill) {
+        throw new Error(`Conta não encontrada: ${id}`);
+      }
+
+      const isFixed = bill.expenseType === 'fixa' || bill.category === 'fixas';
+      if (!isFixed) {
+        // Se for despesa variável, exclui completamente
+        return this.delete(id);
+      }
+
+      const origDueDate = bill.launchDueDate || bill.dueDate;
+      const startMonthKey = bill.startMonthKey || (origDueDate && origDueDate.includes('-') ? origDueDate.substring(0, 7) : fromMonthKey);
+
+      // Se o mês de exclusão for menor ou igual ao mês inicial de lançamento,
+      // a conta não possui histórico anterior -> remove totalmente
+      if (fromMonthKey <= startMonthKey) {
+        return this.delete(id);
+      }
+
+      // Calcula o mês anterior (endMonthKey)
+      const parts = fromMonthKey.split('-');
+      let y = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10) - 1; // 0 a 11
+      m--;
+      if (m < 0) {
+        m = 11;
+        y--;
+      }
+      const pad = (n) => String(n).padStart(2, '0');
+      const endMonthKey = `${y}-${pad(m + 1)}`;
+
+      // Atualiza o registro marcando o término a partir de fromMonthKey
+      return this.update(id, {
+        excludeFromMonthKey: fromMonthKey,
+        endMonthKey: endMonthKey
+      });
+    }
+
+    /**
      * Restaura os dados de exemplo dinâmicos
      * @returns {Promise<Array<Object>>}
      */

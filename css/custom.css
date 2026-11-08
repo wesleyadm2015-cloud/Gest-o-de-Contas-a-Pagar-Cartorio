@@ -536,11 +536,12 @@ table tbody tr td {
   box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3) !important;
 }
 
-.sidebar-nav-item.active i {
+.sidebar-nav-item.active i,
+.sidebar-nav-item.active span {
   color: #ffffff !important;
 }
 
-.sidebar-nav-item.active span:last-child {
+.sidebar-nav-item.active [id^="sidebar-count"] {
   background-color: rgba(255, 255, 255, 0.25) !important;
   color: #ffffff !important;
 }
@@ -677,15 +678,7 @@ table tbody tr td {
   color: #fcd34d !important;
 }
 
-/* Estilos de Botões e Dropdowns de Filtro (Status e Local LD/REC/SE) */
-.btn-location-pill,
-.btn-status-filter {
-  transition: all 0.15s ease-in-out;
-}
-.btn-location-pill:hover,
-.btn-status-filter:hover {
-  transform: translateY(-0.5px);
-}
+/* Dropdowns de Filtro (Status e Local LD/REC/SE) */
 
 #filter-status-select,
 #filter-location-select {

@@ -80,14 +80,23 @@
         // Se a despesa for fixa e o mês visualizado for ANTERIOR ao mês de lançamento da despesa
         const isPriorToLaunch = isFixed && Boolean(startMonthKey) && (targetMonthKey < startMonthKey);
 
+        // Se a despesa fixa foi excluída/encerrada a partir de determinado mês (daquele mês para frente)
+        // NÃO incluir no mês informado nem em meses futuros. Preserva meses anteriores intactos.
+        const isExcludedFromMonth = isFixed && Boolean(
+          (b.excludeFromMonthKey && targetMonthKey >= b.excludeFromMonthKey) ||
+          (b.endMonthKey && targetMonthKey > b.endMonthKey) ||
+          (Array.isArray(b.excludedMonths) && b.excludedMonths.includes(targetMonthKey))
+        );
+
         // =========================================================================
         // REGRA DE NEGÓCIO DE DESPESAS FIXAS:
         // Todas as despesas fixas constam em todos os meses seguintes ao lançamento dela.
         // NÃO incluir em meses anteriores.
+        // NÃO incluir daquele mês para frente se foi excluída/encerrada em determinado mês.
         // Status padrão de "Aguardando Pagamento" (pendente) e vencimento no dia estipulado do mês.
         // =========================================================================
         if (isFixed && b.dueDate) {
-          if (!isPriorToLaunch) {
+          if (!isPriorToLaunch && !isExcludedFromMonth) {
             const stipulatedDay = Number(b.dueDay) || parseInt(b.dueDate.split('-')[2], 10) || 1;
             const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
             const effectiveDay = Math.min(stipulatedDay, daysInMonth);
@@ -154,7 +163,8 @@
           invoiceMeta,
           monthKey: targetMonthKey,
           startMonthKey,
-          isPriorToLaunch
+          isPriorToLaunch,
+          isExcludedFromMonth
         };
       });
     }
@@ -242,6 +252,11 @@
       return enriched.filter((bill) => {
         // Regra de despesa fixa: NÃO incluir em meses anteriores ao lançamento
         if (bill.isPriorToLaunch && period !== 'todos') {
+          return false;
+        }
+
+        // Regra de despesa fixa: NÃO incluir daquele mês para frente se foi excluída/encerrada
+        if (bill.isExcludedFromMonth) {
           return false;
         }
 
@@ -364,7 +379,7 @@
       let dueTodayTotal = 0;
 
       currentMonthEnriched.forEach((b) => {
-        if (b.isPriorToLaunch) return;
+        if (b.isPriorToLaunch || b.isExcludedFromMonth) return;
         if (b.effectiveStatus === 'atrasado') {
           overdueCount++;
           overdueTotal += b.amount;
@@ -379,6 +394,7 @@
 
       // Métricas filtradas para o período selecionado
       const periodBills = enriched.filter((b) => {
+        if (b.isExcludedFromMonth) return false;
         if (b.isPriorToLaunch && period !== 'todos') return false;
         if (b.expenseType === 'fixa' && period === 'mes') return true;
         return this.isDateInPeriod(b.dueDate, period, null, null, curYear, curMonth);
@@ -445,7 +461,8 @@
      */
     getCategoryBreakdown(bills) {
       const enriched = this.enrichBills(bills);
-      const totalOverall = enriched.reduce((sum, b) => sum + b.amount, 0);
+      const active = enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth);
+      const totalOverall = active.reduce((sum, b) => sum + b.amount, 0);
       const groups = {};
 
       // Inicializa com as categorias padrão
@@ -460,7 +477,7 @@
         };
       });
 
-      enriched.forEach((b) => {
+      active.forEach((b) => {
         const cat = groups[b.category] || groups.outros;
         cat.total += b.amount;
         cat.count += 1;
@@ -494,7 +511,7 @@
       const todayISO = window.AppConfig.utils.toISODateString(today);
 
       return enriched.filter((b) => {
-        if (b.isPriorToLaunch) return false;
+        if (b.isPriorToLaunch || b.isExcludedFromMonth) return false;
         if (b.effectiveStatus === 'atrasado') return true;
         if (b.dueDate === todayISO && b.effectiveStatus !== 'pago') return true;
         return false;
@@ -553,7 +570,7 @@
     getMonthBills(bills, year, month) {
       const enriched = this.enrichBills(bills, { targetYear: year, targetMonth: month });
       return enriched.filter((b) => {
-        if (b.isPriorToLaunch) return false;
+        if (b.isPriorToLaunch || b.isExcludedFromMonth) return false;
         if (b.expenseType === 'fixa') return true;
         return this.isDateInPeriod(b.dueDate, 'mes', null, null, year, month);
       });
@@ -568,17 +585,27 @@
     getBillsDueInBusinessDays(bills, maxBusinessDays = 2) {
       const today = this.getTodayNormalized();
       const todayISO = window.AppConfig.utils.toISODateString(today);
-      const enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
+      let enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
       const targetDate = window.AppConfig.utils.addBusinessDays(today, maxBusinessDays);
       const targetISO = window.AppConfig.utils.toISODateString(targetDate);
 
+      // Se a janela de 2 dias úteis alcançar o mês seguinte (virada de mês), inclui também as projeções do mês seguinte
+      if (targetDate.getFullYear() !== today.getFullYear() || targetDate.getMonth() !== today.getMonth()) {
+        const nextMonthEnriched = this.enrichBills(bills, { targetYear: targetDate.getFullYear(), targetMonth: targetDate.getMonth() });
+        enriched = [...enriched, ...nextMonthEnriched];
+      }
+
       return enriched
         .filter((bill) => {
-          if (bill.isPriorToLaunch) return false;
+          if (bill.isPriorToLaunch || bill.isExcludedFromMonth) return false;
           if (bill.effectiveStatus === 'pago') return false;
           if (!bill.dueDate) return false;
-          // Vencimento de hoje até a data limite de N dias úteis
-          return bill.dueDate >= todayISO && bill.dueDate <= targetISO;
+
+          const effectiveDueDate = window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
+          const effectiveISO = window.AppConfig.utils.toISODateString(effectiveDueDate);
+
+          // Vencimento de hoje até a data limite de N dias úteis (considerando vencimento bancário efetivo)
+          return (bill.dueDate >= todayISO || effectiveISO >= todayISO) && effectiveISO <= targetISO;
         })
         .map((bill) => {
           const effectiveDueDate = window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
@@ -600,7 +627,7 @@
     getOverdueBills(bills) {
       const today = this.getTodayNormalized();
       const enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
-      return enriched.filter((b) => !b.isPriorToLaunch && b.effectiveStatus === 'atrasado');
+      return enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth && b.effectiveStatus === 'atrasado');
     }
 
     /**
@@ -611,7 +638,8 @@
      */
     getTopBills(bills, limit = 5) {
       const enriched = this.enrichBills(bills);
-      return [...enriched].sort((a, b) => b.amount - a.amount).slice(0, limit);
+      const active = enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth);
+      return [...active].sort((a, b) => b.amount - a.amount).slice(0, limit);
     }
   }
 
