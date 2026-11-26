@@ -33,12 +33,19 @@
      * Inicializa a aplicação restaurando o estado e tela anteriores
      */
     async init() {
-      this.loadSavedState();
-      window.UIManager.init();
-      window.UIManager.populateSelectOptions();
-      this.bindEvents();
-      this.restoreUIState();
-      await this.loadData(true);
+      try {
+        this.loadSavedState();
+        window.UIManager.init();
+        await window.StorageService.getCategories();
+        await window.StorageService.getHolidayParams();
+        await window.StorageService.getHolidays();
+        window.UIManager.populateSelectOptions();
+        this.bindEvents();
+        this.restoreUIState();
+        await this.loadData(true);
+      } catch (err) {
+        console.error('Falha na inicialização da aplicação:', err);
+      }
     }
 
     /**
@@ -177,6 +184,7 @@
       try {
         this.allBills = await window.StorageService.getAll();
         this.applyFiltersAndRender();
+        this.updateAdminSidebarBadges();
         if (isInitial) {
           this.checkDailyAlertPopup();
         }
@@ -187,19 +195,47 @@
     }
 
     /**
-     * Exibe o popup de alerta com as contas que vencem nos próximos 2 dias úteis
-     * toda vez que a página for atualizada / recarregada
+     * Atualiza os contadores das seções de Administração & Gestão na Sidebar
+     */
+    async updateAdminSidebarBadges() {
+      try {
+        const users = await window.StorageService.getUsers();
+        const usersBadge = document.getElementById('sidebar-count-users');
+        if (usersBadge) usersBadge.textContent = users.length;
+
+        const currentYear = this.activeFilters.selectedYear || new Date().getFullYear();
+        const holidays = await window.StorageService.getHolidays(currentYear);
+        const holidaysBadge = document.getElementById('sidebar-count-holidays');
+        if (holidaysBadge) holidaysBadge.textContent = holidays.length;
+
+        const recurring = await window.StorageService.getRecurringBills();
+        const expBadge = document.getElementById('sidebar-count-expense-manager');
+        if (expBadge) expBadge.textContent = recurring.length;
+
+        const categories = await window.StorageService.getCategories();
+        const catBadge = document.getElementById('sidebar-count-categories');
+        if (catBadge) catBadge.textContent = Object.keys(categories || {}).length;
+      } catch (e) {
+        console.warn('Erro ao atualizar badges da sidebar:', e);
+      }
+    }
+
+    /**
+     * Exibe o popup de alerta com as contas que vencem nos próximos dias úteis parametrizados
+     * toda vez que a página for atualizada / recarregada (conforme regra de negócio)
      */
     checkDailyAlertPopup() {
       // Se o usuário estiver na tela de relatórios, não sobrepõe com o popup de contas diárias
       if (this.activeTab !== 'contas') return;
 
-      const upcomingBills = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
+      const params = window.AppConfig.HOLIDAY_PARAMS || { autoShowDailyPopup: true, alertAdvanceBusinessDays: 2 };
+      if (params.autoShowDailyPopup === false) return;
+
+      const upcomingBills = window.BillService.getBillsDueInBusinessDays(this.allBills, params.alertAdvanceBusinessDays);
       const overdueBills = window.BillService.getOverdueBills(this.allBills);
 
-      // Se houver contas a vencer nos próximos 2 dias úteis (ou atrasadas)
+      // Se houver contas a vencer nos próximos dias úteis parametrizados (ou atrasadas)
       if (upcomingBills.length > 0 || overdueBills.length > 0) {
-        // Abre o popup automaticamente a cada atualização de página
         setTimeout(() => {
           window.UIManager.openDailyAlertModal(upcomingBills, overdueBills);
         }, 300);
@@ -338,6 +374,13 @@
      * Vincula todos os ouvintes de eventos da página
      */
     bindEvents() {
+      // Helper comum de abertura do modal diário de vencimentos
+      const openDailyAlertHelper = () => {
+        const upcoming = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
+        const overdue = window.BillService.getOverdueBills(this.allBills);
+        window.UIManager.openDailyAlertModal(upcoming, overdue);
+      };
+
       // Alternância de Tema
       const btnTheme = document.getElementById('btn-toggle-theme');
       if (btnTheme) {
@@ -766,44 +809,6 @@
         this.updateReportSelectedMonthView();
       });
 
-      // 4. Botões nos Cards Mensais (Delegação de Eventos para Ver Contas, PDF e Excel em cada um dos 12 cards)
-      document.getElementById('report-monthly-grid')?.addEventListener('click', (e) => {
-        const viewBtn = e.target.closest('.btn-month-card-view');
-        const pdfBtn = e.target.closest('.btn-month-card-pdf');
-        const excelBtn = e.target.closest('.btn-month-card-excel');
-
-        if (viewBtn) {
-          e.stopPropagation();
-          const year = parseInt(viewBtn.dataset.year, 10);
-          const monthIndex = parseInt(viewBtn.dataset.month, 10);
-          const select = document.getElementById('select-report-month');
-          if (select) {
-            select.value = `${year}-${monthIndex}`;
-          }
-          this.updateReportSelectedMonthView();
-          document.getElementById('report-selected-month-container')?.scrollIntoView({ behavior: 'smooth' });
-          return;
-        }
-
-        if (pdfBtn) {
-          e.stopPropagation();
-          const year = parseInt(pdfBtn.dataset.year, 10);
-          const monthIndex = parseInt(pdfBtn.dataset.month, 10);
-          const monthLabel = pdfBtn.dataset.label;
-          this.handleMonthPDF(year, monthIndex, monthLabel);
-          return;
-        }
-
-        if (excelBtn) {
-          e.stopPropagation();
-          const year = parseInt(excelBtn.dataset.year, 10);
-          const monthIndex = parseInt(excelBtn.dataset.month, 10);
-          const monthLabel = excelBtn.dataset.label;
-          this.handleMonthExcel(year, monthIndex, monthLabel);
-          return;
-        }
-      });
-
       // Submissão do Formulário de Conta (Criar / Editar)
       document.getElementById('bill-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -841,14 +846,7 @@
 
       // Modal de Exclusão
       document.getElementById('btn-cancel-delete')?.addEventListener('click', () => window.UIManager.closeDeleteModal());
-      document.getElementById('btn-cancel-delete-fixed')?.addEventListener('click', () => window.UIManager.closeDeleteModal());
       document.getElementById('btn-confirm-delete')?.addEventListener('click', async () => {
-        await this.handleDeleteConfirm();
-      });
-      document.getElementById('btn-delete-fixed-from-month')?.addEventListener('click', async () => {
-        await this.handleDeleteFixedFromMonth();
-      });
-      document.getElementById('btn-delete-fixed-all-months')?.addEventListener('click', async () => {
         await this.handleDeleteConfirm();
       });
 
@@ -873,11 +871,8 @@
         const invoiceNumber = document.getElementById('quick-nf-input').value.trim();
         const documentNumber = document.getElementById('quick-doc-input').value.trim();
 
-        const pad = (n) => String(n).padStart(2, '0');
-        const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
-
         try {
-          await window.StorageService.update(id, { invoiceNumber, documentNumber, monthKey });
+          await window.StorageService.update(id, { invoiceNumber, documentNumber });
           window.UIManager.closeQuickNFModal();
           window.UIManager.showToast('Nota Fiscal e Documento atualizados com sucesso!', 'success');
           await this.loadData();
@@ -889,11 +884,9 @@
 
       document.getElementById('btn-clear-quick-nf')?.addEventListener('click', async () => {
         const id = document.getElementById('quick-nf-bill-id').value;
-        const pad = (n) => String(n).padStart(2, '0');
-        const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
 
         try {
-          await window.StorageService.update(id, { invoiceNumber: '', documentNumber: '', monthKey });
+          await window.StorageService.update(id, { invoiceNumber: '', documentNumber: '' });
           window.UIManager.closeQuickNFModal();
           window.UIManager.showToast('Nota Fiscal e Documento removidos.', 'info');
           await this.loadData();
@@ -990,11 +983,9 @@
         if (!bill) return;
 
         const todayISO = window.AppConfig.utils.toISODateString();
-        const monthKey = bill.dueDate ? bill.dueDate.substring(0, 7) : todayISO.substring(0, 7);
         await window.StorageService.update(billId, {
           status: 'pago',
-          paymentDate: todayISO,
-          monthKey
+          paymentDate: todayISO
         });
 
         window.UIManager.showToast(`Conta "${bill.description}" quitada com sucesso!`, 'success');
@@ -1438,6 +1429,685 @@
       document.getElementById('btn-clear-all-filters')?.addEventListener('click', () => {
         this.resetFilters();
       });
+
+      // =========================================================================
+      // EVENTOS: 1. CADASTRO DE USUÁRIOS
+      // =========================================================================
+      document.getElementById('sidebar-btn-users')?.addEventListener('click', async () => {
+        const users = await window.StorageService.getUsers();
+        window.UIManager.renderUsersList(users);
+        window.UIManager.openUsersModal();
+      });
+
+      document.getElementById('btn-close-users-modal')?.addEventListener('click', () => {
+        window.UIManager.closeUsersModal();
+      });
+      document.getElementById('btn-close-users-modal-bottom')?.addEventListener('click', () => {
+        window.UIManager.closeUsersModal();
+      });
+      document.getElementById('users-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'users-modal') {
+          window.UIManager.closeUsersModal();
+        }
+      });
+      document.getElementById('btn-reset-user-form')?.addEventListener('click', () => {
+        window.UIManager.resetUserForm();
+      });
+
+      document.getElementById('user-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('user-id').value;
+        const name = document.getElementById('user-name').value.trim();
+        const email = document.getElementById('user-email').value.trim();
+        const role = document.getElementById('user-role').value;
+        const location = document.getElementById('user-location').value;
+        const status = document.getElementById('user-status').value;
+
+        if (!name || !email) {
+          window.UIManager.showToast('Por favor, informe o nome e o e-mail do usuário.', 'warning');
+          return;
+        }
+
+        await window.StorageService.saveUser({ id, name, email, role, location, status });
+        window.UIManager.showToast(id ? 'Usuário atualizado com sucesso!' : 'Novo usuário cadastrado com sucesso!', 'success');
+        window.UIManager.resetUserForm();
+        const updatedUsers = await window.StorageService.getUsers();
+        window.UIManager.renderUsersList(updatedUsers);
+        this.updateAdminSidebarBadges();
+      });
+
+      document.getElementById('users-table-body')?.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.btn-edit-user');
+        const deleteBtn = e.target.closest('.btn-delete-user');
+
+        if (editBtn) {
+          const userId = editBtn.dataset.userId || editBtn.getAttribute('data-user-id') || editBtn.closest('tr')?.dataset?.userId;
+          const users = await window.StorageService.getUsers();
+          let user = users.find((u) => String(u.id) === String(userId));
+          if (!user && userId) {
+            user = users.find((u) => u.email === userId || u.name === userId);
+          }
+          if (user) {
+            window.UIManager.openEditUserModal(user);
+          } else {
+            console.warn('Usuário não localizado para edição:', userId);
+          }
+          return;
+        }
+
+        if (deleteBtn) {
+          const userId = deleteBtn.dataset.userId || deleteBtn.getAttribute('data-user-id') || deleteBtn.closest('tr')?.dataset?.userId;
+          const userName = deleteBtn.dataset.userName || 'este usuário';
+          if (confirm(`Tem certeza de que deseja remover o usuário "${userName}"?`)) {
+            await window.StorageService.deleteUser(userId);
+            window.UIManager.showToast('Usuário removido com sucesso!', 'success');
+            const updatedUsers = await window.StorageService.getUsers();
+            window.UIManager.renderUsersList(updatedUsers);
+            this.updateAdminSidebarBadges();
+          }
+          return;
+        }
+      });
+
+      // Controles da Tela Dedicada de Edição de Usuário
+      document.getElementById('btn-close-edit-user-modal')?.addEventListener('click', () => {
+        window.UIManager.closeEditUserModal();
+      });
+
+      document.getElementById('btn-cancel-edit-user-modal')?.addEventListener('click', () => {
+        window.UIManager.closeEditUserModal();
+      });
+
+      document.getElementById('edit-user-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'edit-user-modal') {
+          window.UIManager.closeEditUserModal();
+        }
+      });
+
+      // Fechar modais com a tecla Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const editModal = document.getElementById('edit-user-modal');
+          if (editModal && !editModal.classList.contains('hidden')) {
+            window.UIManager.closeEditUserModal();
+            return;
+          }
+          const expModal = document.getElementById('expense-manager-modal');
+          if (expModal && !expModal.classList.contains('hidden')) {
+            window.UIManager.closeExpenseManagerModal();
+            return;
+          }
+          const catModal = document.getElementById('categories-modal');
+          if (catModal && !catModal.classList.contains('hidden')) {
+            window.UIManager.closeCategoriesModal();
+            return;
+          }
+          const usersModal = document.getElementById('users-modal');
+          if (usersModal && !usersModal.classList.contains('hidden')) {
+            window.UIManager.closeUsersModal();
+            return;
+          }
+          const holModal = document.getElementById('holidays-modal');
+          if (holModal && !holModal.classList.contains('hidden')) {
+            window.UIManager.closeHolidaysModal();
+            return;
+          }
+        }
+      });
+
+      // Atualização interativa do Avatar com as iniciais ao digitar o nome
+      document.getElementById('modal-edit-user-name')?.addEventListener('input', (e) => {
+        const name = e.target.value.trim();
+        const initials = name ? name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
+        const avatarEl = document.getElementById('modal-edit-user-avatar');
+        if (avatarEl) avatarEl.textContent = initials || 'U';
+      });
+
+      // Atualização dinâmica do badge de Perfil ao trocar a função
+      document.getElementById('modal-edit-user-role')?.addEventListener('change', (e) => {
+        const roleVal = e.target.value;
+        const roleMeta = (window.AppConfig.USER_ROLES && window.AppConfig.USER_ROLES[roleVal]) || { label: roleVal };
+        const badgeEl = document.getElementById('modal-edit-user-badge-role');
+        if (badgeEl) badgeEl.textContent = roleMeta.label;
+      });
+
+      // Submissão do Formulário na Tela Dedicada de Edição
+      document.getElementById('modal-edit-user-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('modal-edit-user-id').value;
+        const name = document.getElementById('modal-edit-user-name').value.trim();
+        const email = document.getElementById('modal-edit-user-email').value.trim();
+        const role = document.getElementById('modal-edit-user-role').value;
+        const location = document.getElementById('modal-edit-user-location').value;
+        const status = document.getElementById('modal-edit-user-status').value;
+
+        if (!name || !email) {
+          window.UIManager.showToast('Por favor, preencha o nome e o e-mail do usuário.', 'warning');
+          return;
+        }
+
+        await window.StorageService.saveUser({ id, name, email, role, location, status });
+        window.UIManager.showToast(`Informações de "${name}" atualizadas com sucesso!`, 'success');
+        window.UIManager.closeEditUserModal();
+
+        const updatedUsers = await window.StorageService.getUsers();
+        window.UIManager.renderUsersList(updatedUsers);
+        this.updateAdminSidebarBadges();
+      });
+
+      // =========================================================================
+      // EVENTOS: 2. CADASTRO DE FERIADOS
+      // =========================================================================
+      const loadAndRenderHolidays = async () => {
+        const yearSelect = document.getElementById('holiday-filter-year');
+        const year = yearSelect ? yearSelect.value : (this.activeFilters.selectedYear || '2026');
+        const holidays = await window.StorageService.getHolidays(year);
+        window.UIManager.renderHolidaysList(holidays, year);
+      };
+
+      document.getElementById('sidebar-btn-holidays')?.addEventListener('click', async () => {
+        const currentYear = this.activeFilters.selectedYear || '2026';
+        await loadAndRenderHolidays();
+        const params = await window.StorageService.getHolidayParams();
+        window.UIManager.renderHolidayParams(params);
+        window.UIManager.switchHolidaysTab('calendar');
+        window.UIManager.openHolidaysModal(currentYear);
+      });
+
+      document.getElementById('btn-close-holidays-modal')?.addEventListener('click', () => {
+        window.UIManager.closeHolidaysModal();
+      });
+      document.getElementById('btn-close-holidays-modal-bottom')?.addEventListener('click', () => {
+        window.UIManager.closeHolidaysModal();
+      });
+      document.getElementById('holidays-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'holidays-modal') {
+          window.UIManager.closeHolidaysModal();
+        }
+      });
+
+      // Alternância de abas no Modal de Feriados (Calendário vs Parametrização)
+      document.querySelectorAll('.tab-holidays-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const tab = e.currentTarget.dataset.tab;
+          window.UIManager.switchHolidaysTab(tab);
+          if (tab === 'params') {
+            const params = await window.StorageService.getHolidayParams();
+            window.UIManager.renderHolidayParams(params);
+          }
+        });
+      });
+
+      // Submissão do Formulário de Parametrização de Feriados & Aviso Prévio
+      document.getElementById('holiday-params-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const daysSelect = document.getElementById('param-alert-business-days');
+        const autoProrogate = document.getElementById('param-auto-prorogate')?.checked;
+        const autoPopup = document.getElementById('param-auto-popup')?.checked;
+        const checkedTypes = Array.from(document.querySelectorAll('input[name="param-hol-type"]:checked')).map((cb) => cb.value);
+
+        const params = {
+          alertAdvanceBusinessDays: parseInt(daysSelect?.value, 10) || 2,
+          autoProrogateNonBusinessDays: autoProrogate,
+          consideredTypes: checkedTypes,
+          autoShowDailyPopup: autoPopup
+        };
+
+        await window.StorageService.saveHolidayParams(params);
+        window.AppConfig.utils.reloadHolidays();
+        window.UIManager.showToast('Parâmetros de feriados e aviso prévio salvos com sucesso!', 'success');
+        
+        // Recalcula status de todas as contas, filtros e contadores da sidebar
+        await this.loadData();
+      });
+
+      // Restaurar Parâmetros Padrão de Feriados e Aviso Prévio
+      document.getElementById('btn-reset-holiday-params')?.addEventListener('click', async () => {
+        if (confirm('Deseja restaurar os parâmetros de feriados e aviso prévio para os padrões cartorários (2 dias úteis)?')) {
+          const defaults = await window.StorageService.resetHolidayParams();
+          window.AppConfig.utils.reloadHolidays();
+          window.UIManager.renderHolidayParams(defaults);
+          window.UIManager.showToast('Parâmetros restaurados com sucesso!', 'success');
+          await this.loadData();
+        }
+      });
+
+      // Simulador de Vencimento Efetivo e Início de Aviso Prévio
+      const runHolidaySimulation = () => {
+        const dateInput = document.getElementById('sim-date-input');
+        const val = dateInput?.value;
+        if (!val) {
+          window.UIManager.showToast('Selecione uma data para simular o cálculo.', 'warning');
+          return;
+        }
+
+        const advanceDays = parseInt(document.getElementById('param-alert-business-days')?.value, 10) || 2;
+        const today = window.BillService.getTodayNormalized();
+        const todayISO = window.AppConfig.utils.toISODateString(today);
+
+        const nominalDate = new Date(val + 'T00:00:00');
+        const nominalFormatted = window.AppConfig.utils.formatDate(val);
+        const nominalDayName = window.AppConfig.utils.getDayOfWeekName(nominalDate);
+        const isBusiness = window.AppConfig.utils.isBusinessDay(val);
+        const holiday = window.AppConfig.utils.isHoliday(val);
+        const holTypeMeta = holiday && window.AppConfig.HOLIDAY_TYPES ? window.AppConfig.HOLIDAY_TYPES[holiday.type] : null;
+
+        const effectiveDue = window.AppConfig.utils.getEffectiveBusinessDueDate(val);
+        const effectiveISO = window.AppConfig.utils.toISODateString(effectiveDue);
+        const effectiveFormatted = window.AppConfig.utils.formatDate(effectiveISO);
+        const effectiveDayName = window.AppConfig.utils.getDayOfWeekName(effectiveDue);
+        const isProrogated = effectiveISO !== val;
+
+        // Data em que o aviso começará a ser exibido (N dias úteis antes do vencimento efetivo)
+        let alertStartDate = new Date(effectiveDue);
+        let subtracted = 0;
+        let maxLoop = 60;
+        while (subtracted < advanceDays && maxLoop > 0) {
+          alertStartDate.setDate(alertStartDate.getDate() - 1);
+          if (window.AppConfig.utils.isBusinessDay(alertStartDate)) {
+            subtracted++;
+          }
+          maxLoop--;
+        }
+        const alertStartISO = window.AppConfig.utils.toISODateString(alertStartDate);
+        const alertStartFormatted = window.AppConfig.utils.formatDate(alertStartISO);
+        const alertStartDayName = window.AppConfig.utils.getDayOfWeekName(alertStartDate);
+
+        const isAlertActiveToday = todayISO >= alertStartISO && todayISO <= effectiveISO;
+        let alertStatusText = '';
+        if (todayISO > effectiveISO) {
+          alertStatusText = 'Vencimento já ultrapassado perante a data de hoje.';
+        } else if (todayISO < alertStartISO) {
+          const diffToAlert = window.AppConfig.utils.getBusinessDaysDiff(todayISO, alertStartISO);
+          alertStatusText = `Aviso entrará em vigor em ${diffToAlert} dia(s) útil(eis).`;
+        } else {
+          alertStatusText = 'Aviso atualmente ATIVO no painel!';
+        }
+
+        window.UIManager.renderHolidaySimulation({
+          nominalDate,
+          nominalISO: val,
+          nominalFormatted,
+          nominalDayName,
+          isBusinessDay: isBusiness,
+          holiday,
+          holidayTypeName: holTypeMeta ? holTypeMeta.label : (holiday ? holiday.type : ''),
+          effectiveDue,
+          effectiveISO,
+          effectiveFormatted,
+          effectiveDayName,
+          isProrogated,
+          advanceDays,
+          alertStartDate,
+          alertStartISO,
+          alertStartFormatted,
+          alertStartDayName,
+          isAlertActiveToday,
+          alertStatusText
+        });
+      };
+
+      document.getElementById('btn-run-holiday-sim')?.addEventListener('click', runHolidaySimulation);
+      document.getElementById('sim-date-input')?.addEventListener('change', runHolidaySimulation);
+
+      document.getElementById('holiday-filter-year')?.addEventListener('change', async () => {
+        await loadAndRenderHolidays();
+      });
+
+      document.getElementById('holiday-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dateInput = document.getElementById('holiday-date');
+        const nameInput = document.getElementById('holiday-name');
+        const typeInput = document.getElementById('holiday-type');
+
+        const date = dateInput.value;
+        const name = nameInput.value.trim();
+        const type = typeInput.value;
+
+        if (!date || !name) {
+          window.UIManager.showToast('Preencha a data e a descrição do feriado.', 'warning');
+          return;
+        }
+
+        await window.StorageService.saveHoliday({ date, name, type });
+        window.UIManager.showToast(`Feriado "${name}" cadastrado com sucesso!`, 'success');
+        nameInput.value = '';
+        await loadAndRenderHolidays();
+        this.updateAdminSidebarBadges();
+        // Recalcula alerta diário e filtros pois a data útil pode ter mudado
+        this.applyFiltersAndRender();
+      });
+
+      document.getElementById('holidays-table-body')?.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.btn-delete-holiday');
+        if (deleteBtn) {
+          const holId = deleteBtn.dataset.holidayId;
+          const holName = deleteBtn.dataset.holidayName || 'este feriado';
+          if (confirm(`Deseja remover o feriado "${holName}"?`)) {
+            await window.StorageService.deleteHoliday(holId);
+            window.UIManager.showToast('Feriado removido com sucesso!', 'success');
+            await loadAndRenderHolidays();
+            this.updateAdminSidebarBadges();
+            this.applyFiltersAndRender();
+          }
+        }
+      });
+
+      document.getElementById('btn-reset-default-holidays')?.addEventListener('click', async () => {
+        const yearSelect = document.getElementById('holiday-filter-year');
+        const year = yearSelect ? yearSelect.value : null;
+        if (confirm('Deseja restaurar os feriados oficiais padrão de São José dos Campos e do Brasil?')) {
+          await window.StorageService.resetDefaultHolidays(year);
+          window.UIManager.showToast('Feriados oficiais padrão restaurados com sucesso!', 'success');
+          await loadAndRenderHolidays();
+          this.updateAdminSidebarBadges();
+          this.applyFiltersAndRender();
+        }
+      });
+
+      // =========================================================================
+      // EVENTOS: 3. GERENCIADOR DE DESPESAS FIXAS (EXCLUSIVO PARA CONTAS FIXAS)
+      // =========================================================================
+      document.getElementById('sidebar-btn-expense-manager')?.addEventListener('click', async () => {
+        window.UIManager.populateSelectOptions();
+        const recurringBills = await window.StorageService.getRecurringBills();
+        window.UIManager.renderExpenseFixedBills(recurringBills);
+        window.UIManager.openExpenseManagerModal();
+      });
+
+      document.getElementById('btn-close-expense-manager-modal')?.addEventListener('click', () => {
+        window.UIManager.closeExpenseManagerModal();
+      });
+      document.getElementById('btn-close-expense-manager-modal-bottom')?.addEventListener('click', () => {
+        window.UIManager.closeExpenseManagerModal();
+      });
+      document.getElementById('expense-manager-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'expense-manager-modal') {
+          window.UIManager.closeExpenseManagerModal();
+        }
+      });
+
+      // =========================================================================
+      // EVENTOS: 4. GERENCIAR CATEGORIAS DE DESPESAS (LISTA E FORMULÁRIO)
+      // =========================================================================
+      document.getElementById('sidebar-btn-manage-categories')?.addEventListener('click', async () => {
+        window.UIManager.populateSelectOptions();
+        const categories = await window.StorageService.getCategories();
+        window.UIManager.renderExpenseCategories(categories, this.allBills);
+        window.UIManager.openCategoriesModal();
+      });
+
+      document.getElementById('btn-close-categories-modal')?.addEventListener('click', () => {
+        window.UIManager.closeCategoriesModal();
+      });
+      document.getElementById('btn-close-categories-modal-bottom')?.addEventListener('click', () => {
+        window.UIManager.closeCategoriesModal();
+      });
+      document.getElementById('categories-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'categories-modal') {
+          window.UIManager.closeCategoriesModal();
+        }
+      });
+
+      // Mudança de Cor no formulário de categoria
+      const catColorInput = document.getElementById('cat-color');
+      const catColorHex = document.getElementById('cat-color-hex');
+      if (catColorInput && catColorHex) {
+        catColorInput.addEventListener('input', (e) => {
+          catColorHex.textContent = e.target.value;
+        });
+      }
+
+      // Cancelar edição no form de categoria
+      document.getElementById('btn-cancel-cat-form')?.addEventListener('click', () => {
+        window.UIManager.resetCategoryForm();
+      });
+
+      // Botão de Nova Categoria na barra de ações
+      document.getElementById('btn-focus-new-cat')?.addEventListener('click', () => {
+        window.UIManager.resetCategoryForm();
+        document.getElementById('cat-name')?.focus();
+      });
+
+      // Restaurar Categorias Padrão
+      document.getElementById('btn-reset-categories-default')?.addEventListener('click', async () => {
+        if (confirm('Deseja restaurar as categorias padrão do sistema cartorário? Categorias customizadas serão redefinidas para os padrões institucionais.')) {
+          const defaults = await window.StorageService.resetDefaultCategories();
+          window.UIManager.resetCategoryForm();
+          window.UIManager.populateSelectOptions();
+          window.UIManager.renderExpenseCategories(defaults, this.allBills);
+          await this.updateAdminSidebarBadges();
+          await this.loadData();
+          window.UIManager.showToast('Categorias padrão restauradas com sucesso!', 'success');
+        }
+      });
+
+      // Submissão do Formulário de Categoria (Criar ou Editar)
+      document.getElementById('category-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const idInput = document.getElementById('cat-id');
+        const nameInput = document.getElementById('cat-name');
+        const iconInput = document.getElementById('cat-icon');
+        const colorInput = document.getElementById('cat-color');
+
+        const existingId = idInput?.value ? idInput.value.trim() : '';
+        const label = nameInput.value.trim();
+        const icon = iconInput.value;
+        const color = colorInput.value;
+
+        if (!label) {
+          window.UIManager.showToast('Informe o nome da categoria.', 'warning');
+          return;
+        }
+
+        const isEditing = Boolean(existingId);
+        const catId = existingId || ('cat_' + label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_'));
+
+        await window.StorageService.saveCategory({ id: catId, label, icon, color });
+        window.UIManager.showToast(isEditing ? `Categoria "${label}" atualizada com sucesso!` : `Categoria "${label}" adicionada com sucesso!`, 'success');
+        
+        window.UIManager.resetCategoryForm();
+        window.UIManager.populateSelectOptions();
+        const categories = await window.StorageService.getCategories();
+        window.UIManager.renderExpenseCategories(categories, this.allBills);
+        await this.updateAdminSidebarBadges();
+        this.applyFiltersAndRender();
+      });
+
+      // Ações na Lista de Categorias (Editar e Excluir)
+      const handleCategoryAction = async (e) => {
+        // Editar Categoria
+        const editBtn = e.target.closest('.btn-edit-category');
+        if (editBtn) {
+          const catId = editBtn.dataset.catId;
+          const categories = await window.StorageService.getCategories();
+          const cat = categories[catId] || {
+            id: catId,
+            label: editBtn.dataset.catLabel,
+            icon: editBtn.dataset.catIcon,
+            color: editBtn.dataset.catColor
+          };
+          window.UIManager.fillCategoryForm(cat);
+          return;
+        }
+
+        // Excluir Categoria
+        const deleteBtn = e.target.closest('.btn-delete-category');
+        if (deleteBtn) {
+          const catId = deleteBtn.dataset.catId;
+          const catLabel = deleteBtn.dataset.catLabel || 'esta categoria';
+          const billsCount = parseInt(deleteBtn.dataset.billsCount, 10) || 0;
+
+          const confirmMsg = billsCount > 0
+            ? `Deseja realmente excluir a categoria "${catLabel}"?\n\nExistem ${billsCount} conta(s) vinculada(s) a ela. Ao confirmar, essas contas serão reclassificadas automaticamente para "Outras Despesas".`
+            : `Deseja realmente excluir a categoria "${catLabel}"?`;
+
+          if (confirm(confirmMsg)) {
+            const success = await window.StorageService.deleteCategory(catId);
+            if (success) {
+              window.UIManager.showToast(`Categoria "${catLabel}" removida com sucesso!`, 'success');
+              window.UIManager.resetCategoryForm();
+              window.UIManager.populateSelectOptions();
+              await this.loadData();
+              const categories = await window.StorageService.getCategories();
+              window.UIManager.renderExpenseCategories(categories, this.allBills);
+              await this.updateAdminSidebarBadges();
+            } else {
+              window.UIManager.showToast('Não foi possível remover a categoria selecionada.', 'error');
+            }
+          }
+        }
+      };
+
+      document.getElementById('categories-table-body')?.addEventListener('click', handleCategoryAction);
+      document.getElementById('categories-table')?.addEventListener('click', handleCategoryAction);
+      document.getElementById('categories-grid')?.addEventListener('click', handleCategoryAction);
+
+      // =========================================================================
+      // GESTÃO DE DESPESAS RECORRENTES (REPOSITÓRIO PERMANENTE)
+      // =========================================================================
+      // Botão para abrir formulário de inclusão de despesa recorrente
+      document.getElementById('btn-open-recurring-form')?.addEventListener('click', () => {
+        window.UIManager.openRecurringForm();
+      });
+
+      document.getElementById('btn-close-recurring-form')?.addEventListener('click', () => {
+        window.UIManager.closeRecurringForm();
+      });
+
+      document.getElementById('btn-cancel-recurring-form')?.addEventListener('click', () => {
+        window.UIManager.closeRecurringForm();
+      });
+
+      // Submissão do formulário de Despesa Recorrente
+      document.getElementById('recurring-bill-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('recurring-bill-id').value;
+        const description = document.getElementById('recurring-description').value.trim();
+        const amount = parseFloat(document.getElementById('recurring-amount').value) || 0;
+        const dueDay = parseInt(document.getElementById('recurring-due-day').value, 10) || 1;
+        const location = document.getElementById('recurring-location').value;
+        const category = document.getElementById('recurring-category').value;
+        const paymentMethod = document.getElementById('recurring-payment-method').value;
+        const notes = document.getElementById('recurring-notes').value.trim();
+
+        if (!description) {
+          window.UIManager.showToast('Informe a descrição da despesa recorrente.', 'warning');
+          return;
+        }
+
+        if (amount <= 0) {
+          window.UIManager.showToast('Informe um valor válido maior que zero.', 'warning');
+          return;
+        }
+
+        await window.StorageService.saveRecurringBill({
+          id,
+          description,
+          amount,
+          dueDay,
+          location,
+          category,
+          paymentMethod,
+          notes
+        });
+
+        window.UIManager.showToast(
+          id ? `Despesa "${description}" atualizada no repositório!` : `Despesa "${description}" salva com sucesso no repositório!`,
+          'success'
+        );
+
+        window.UIManager.closeRecurringForm();
+        const updatedRecurring = await window.StorageService.getRecurringBills();
+        window.UIManager.renderExpenseFixedBills(updatedRecurring);
+        this.updateAdminSidebarBadges();
+      });
+
+      // Ações na Tabela de Despesas Recorrentes (Editar, Lançar no Mês, Excluir)
+      document.getElementById('fixed-bills-table-body')?.addEventListener('click', async (e) => {
+        const triggerBtn = e.target.closest('.btn-trigger-new-recurring');
+        const editBtn = e.target.closest('.btn-edit-recurring-bill');
+        const launchBtn = e.target.closest('.btn-launch-single-recurring');
+        const deleteBtn = e.target.closest('.btn-delete-recurring-bill');
+
+        if (triggerBtn) {
+          window.UIManager.openRecurringForm();
+          return;
+        }
+
+        if (editBtn) {
+          const recId = editBtn.dataset.recurringId;
+          const recurringBills = await window.StorageService.getRecurringBills();
+          const rec = recurringBills.find((r) => r.id === recId);
+          if (rec) {
+            window.UIManager.openRecurringForm(rec);
+          }
+          return;
+        }
+
+        if (launchBtn) {
+          const recId = launchBtn.dataset.recurringId;
+          const year = this.activeFilters.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : new Date().getFullYear();
+          const month = this.activeFilters.selectedMonth !== undefined ? Number(this.activeFilters.selectedMonth) : new Date().getMonth();
+          const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês';
+
+          try {
+            const newBill = await window.StorageService.launchRecurringBillToMonth(recId, year, month);
+            window.UIManager.showToast(`Despesa "${newBill.description}" lançada em ${monthName}/${year}!`, 'success');
+            await this.loadData();
+          } catch (err) {
+            console.error('Erro ao lançar despesa recorrente:', err);
+            window.UIManager.showToast('Erro ao lançar despesa no mês.', 'error');
+          }
+          return;
+        }
+
+        if (deleteBtn) {
+          const recId = deleteBtn.dataset.recurringId;
+          const recName = deleteBtn.dataset.recurringName || 'esta despesa';
+          if (confirm(`Tem certeza de que deseja remover a despesa recorrente "${recName}" deste repositório?`)) {
+            await window.StorageService.deleteRecurringBill(recId);
+            window.UIManager.showToast(`Despesa recorrente "${recName}" removida do repositório.`, 'info');
+            const updatedRecurring = await window.StorageService.getRecurringBills();
+            window.UIManager.renderExpenseFixedBills(updatedRecurring);
+            this.updateAdminSidebarBadges();
+          }
+          return;
+        }
+      });
+
+      // Botão Lançar Todas no Mês Atual
+      document.getElementById('btn-launch-all-recurring')?.addEventListener('click', async () => {
+        const year = this.activeFilters.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : new Date().getFullYear();
+        const month = this.activeFilters.selectedMonth !== undefined ? Number(this.activeFilters.selectedMonth) : new Date().getMonth();
+        const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês';
+
+        const result = await window.StorageService.launchAllRecurringToMonth(year, month);
+        if (result.created.length > 0) {
+          window.UIManager.showToast(`${result.created.length} despesa(s) recorrente(s) lançada(s) em ${monthName}/${year}!`, 'success');
+          await this.loadData();
+        } else if (result.skipped.length > 0) {
+          window.UIManager.showToast(`As despesas recorrentes do repositório já constam lançadas em ${monthName}/${year}.`, 'info');
+        } else {
+          window.UIManager.showToast('Nenhuma despesa recorrente cadastrada no repositório.', 'warning');
+        }
+      });
+
+      // Submissão de Parâmetros Orçamentários
+      document.getElementById('budget-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const monthlyBudget = parseFloat(document.getElementById('budget-monthly-amount').value) || 8000;
+        const alertThreshold = parseInt(document.getElementById('budget-alert-threshold').value, 10) || 80;
+
+        await window.StorageService.saveBudgetSettings({ monthlyBudget, alertThreshold });
+        window.UIManager.showToast('Parâmetros de orçamento salvos com sucesso!', 'success');
+
+        const currentYear = this.activeFilters.selectedYear || new Date().getFullYear();
+        const currentMonth = this.activeFilters.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
+        const monthBills = window.BillService.getMonthBills(this.allBills, currentYear, currentMonth);
+        const currentMonthTotal = monthBills.reduce((s, b) => s + (Number(b.amount) || 0), 0);
+        window.UIManager.renderExpenseBudget({ monthlyBudget, alertThreshold }, currentMonthTotal);
+      });
     }
 
     /**
@@ -1488,23 +2158,12 @@
       }
 
       const dueDay = dueDate && dueDate.includes('-') ? parseInt(dueDate.split('-')[2], 10) : 1;
-      const pad = (n) => String(n).padStart(2, '0');
-      const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
-      const month = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
-      const currentMonthKey = `${year}-${pad(month + 1)}`;
-
-      const modalMonthKey = document.getElementById('bill-month-key')?.value;
-      const monthKey = modalMonthKey || (dueDate && dueDate.includes('-') ? dueDate.substring(0, 7) : currentMonthKey);
-
-      const startMonthKey = dueDate && dueDate.includes('-') ? dueDate.substring(0, 7) : monthKey;
 
       const billData = {
         description,
         location,
         expenseType,
         dueDay,
-        startMonthKey,
-        launchDueDate: dueDate,
         invoiceNumber,
         documentNumber,
         amount,
@@ -1513,8 +2172,7 @@
         paymentMethod,
         status: finalStatus,
         paymentDate: finalPaymentDate,
-        notes,
-        monthKey
+        notes
       };
 
       try {
@@ -1566,23 +2224,18 @@
       const bill = this.allBills.find((b) => b.id === id);
       if (!bill) return;
 
-      const pad = (n) => String(n).padStart(2, '0');
-      const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
-
       try {
         if (newDate) {
           // Salva a data exata informada pelo usuário e garante status pago
           await window.StorageService.update(id, {
             status: 'pago',
-            paymentDate: newDate,
-            monthKey
+            paymentDate: newDate
           });
           window.UIManager.showToast(`Data de pagamento de "${bill.description}" definida para ${window.AppConfig.utils.formatDate(newDate)}!`, 'success');
         } else {
           await window.StorageService.update(id, {
             status: 'pendente',
-            paymentDate: null,
-            monthKey
+            paymentDate: null
           });
           window.UIManager.showToast(`Data de pagamento de "${bill.description}" removida (marcada como Aguardando Pagamento).`, 'info');
         }
@@ -1604,24 +2257,19 @@
       const bill = this.allBills.find((b) => b.id === id);
       if (!bill) return;
 
-      const pad = (n) => String(n).padStart(2, '0');
-      const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
-
       try {
         if (newStatus === 'pago') {
           // Quando colocar pago, sempre preenche com a data atual (hoje)
           const today = window.AppConfig.utils.toISODateString();
           await window.StorageService.update(id, {
             status: 'pago',
-            paymentDate: today,
-            monthKey
+            paymentDate: today
           });
           window.UIManager.showToast(`Despesa "${bill.description}" marcada como PAGA com a data de hoje (${window.AppConfig.utils.formatDate(today)})!`, 'success');
         } else {
           await window.StorageService.update(id, {
             status: 'pendente',
-            paymentDate: null,
-            monthKey
+            paymentDate: null
           });
           window.UIManager.showToast(`Despesa "${bill.description}" marcada como AGUARDANDO PAGAMENTO.`, 'info');
         }
@@ -1642,11 +2290,8 @@
       const bill = this.allBills.find((b) => b.id === id);
       if (!bill) return;
 
-      const pad = (n) => String(n).padStart(2, '0');
-      const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
-
       try {
-        await window.StorageService.update(id, { location: newLocation, monthKey });
+        await window.StorageService.update(id, { location: newLocation });
         window.UIManager.showToast(`Local de "${bill.description}" definido para ${newLocation}!`, 'success');
         await this.loadData();
       } catch (err) {
@@ -1683,9 +2328,6 @@
       const bill = this.allBills.find((b) => b.id === id);
       if (!bill) return;
 
-      const pad = (n) => String(n).padStart(2, '0');
-      const monthKey = `${this.activeFilters.selectedYear}-${pad(this.activeFilters.selectedMonth + 1)}`;
-
       const isCurrentlyPaid = bill.effectiveStatus === 'pago' || bill.status === 'pago';
       const newStatus = isCurrentlyPaid ? 'pendente' : 'pago';
       const newPaymentDate = isCurrentlyPaid ? null : window.AppConfig.utils.toISODateString();
@@ -1693,8 +2335,7 @@
       try {
         await window.StorageService.update(id, {
           status: newStatus,
-          paymentDate: newPaymentDate,
-          monthKey
+          paymentDate: newPaymentDate
         });
 
         if (isCurrentlyPaid) {
@@ -1716,25 +2357,12 @@
      * @param {string} id
      */
     async handleEditBill(id) {
-      const curYear = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
-      const curMonth = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
-      const pad = (n) => String(n).padStart(2, '0');
-      const targetMonthKey = `${curYear}-${pad(curMonth + 1)}`;
-
       const rawBill = await window.StorageService.getById(id);
       if (!rawBill) return;
 
-      const [enrichedBill] = window.BillService.enrichBills([rawBill], {
-        targetYear: curYear,
-        targetMonth: curMonth
-      });
-
+      const [enrichedBill] = window.BillService.enrichBills([rawBill]);
       if (enrichedBill) {
-        window.UIManager.openBillModal('edit', enrichedBill, {
-          monthKey: targetMonthKey,
-          targetYear: curYear,
-          targetMonth: curMonth
-        });
+        window.UIManager.openBillModal('edit', enrichedBill);
       }
     }
 
@@ -1745,34 +2373,7 @@
     async handlePromptDelete(id) {
       const bill = await window.StorageService.getById(id);
       if (bill) {
-        window.UIManager.openDeleteModal(bill, {
-          selectedYear: this.activeFilters?.selectedYear,
-          selectedMonth: this.activeFilters?.selectedMonth
-        });
-      }
-    }
-
-    /**
-     * Exclui despesa fixa daquele mês para frente, preservando integralmente os meses anteriores
-     */
-    async handleDeleteFixedFromMonth() {
-      const bill = window.UIManager.currentBillToDelete;
-      if (!bill) return;
-
-      const pad = (n) => String(n).padStart(2, '0');
-      const year = this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear();
-      const month = this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth();
-      const fromMonthKey = `${year}-${pad(month + 1)}`;
-      const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês Atual';
-
-      try {
-        await window.StorageService.excludeFixedFromMonth(bill.id, fromMonthKey);
-        window.UIManager.closeDeleteModal();
-        window.UIManager.showToast(`Despesa fixa "${bill.description}" excluída a partir de ${monthName}/${year} em diante! Histórico dos meses anteriores preservado.`, 'success');
-        await this.loadData();
-      } catch (err) {
-        console.error('Falha ao excluir despesa fixa a partir do mês:', err);
-        window.UIManager.showToast('Erro ao excluir despesa fixa.', 'error');
+        window.UIManager.openDeleteModal(bill);
       }
     }
 

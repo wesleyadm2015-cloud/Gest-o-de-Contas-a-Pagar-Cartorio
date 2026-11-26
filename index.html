@@ -168,6 +168,69 @@
           </button>
         </div>
 
+        <!-- SEÇÃO 3: ADMINISTRAÇÃO & GESTÃO -->
+        <div class="space-y-1 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider px-2 block mb-1">
+            Administração & Gestão
+          </span>
+
+          <!-- 1. Cadastro de Usuários -->
+          <button
+            type="button"
+            id="sidebar-btn-users"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            title="Cadastro e gestão de operadores, financeiro e administradores"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="users" class="w-4 h-4 text-emerald-600"></i>
+              <span>Cadastro de Usuários</span>
+            </div>
+            <span id="sidebar-count-users" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">0</span>
+          </button>
+
+          <!-- 2. Cadastro de Feriados -->
+          <button
+            type="button"
+            id="sidebar-btn-holidays"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors"
+            title="Feriados municipais de SJC, estaduais e nacionais do calendário cartorário"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="calendar-days" class="w-4 h-4 text-amber-500"></i>
+              <span>Cadastro de Feriados</span>
+            </div>
+            <span id="sidebar-count-holidays" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">0</span>
+          </button>
+
+          <!-- 3. Gerenciador de Despesas Fixas -->
+          <button
+            type="button"
+            id="sidebar-btn-expense-manager"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Gerenciador de Despesas Fixas: cadastrar, editar, controlar e excluir despesas fixas recorrentes"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="pin" class="w-4 h-4 text-emerald-600"></i>
+              <span>Gerenciador de Despesas</span>
+            </div>
+            <span id="sidebar-count-expense-manager" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">0</span>
+          </button>
+
+          <!-- 4. Gerenciar Categorias -->
+          <button
+            type="button"
+            id="sidebar-btn-manage-categories"
+            class="sidebar-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Gerenciar e personalizar categorias de despesas do cartório"
+          >
+            <div class="flex items-center gap-2">
+              <i data-lucide="tags" class="w-4 h-4 text-emerald-600"></i>
+              <span>Gerenciar Categorias</span>
+            </div>
+            <span id="sidebar-count-categories" class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">0</span>
+          </button>
+        </div>
+
       </aside>
 
       <!-- ===================================================================== -->
@@ -609,7 +672,7 @@
               </h3>
             </div>
             <p class="text-[11px] text-slate-400 mt-0.5">
-              Demonstrativo consolidado de despesas pagas mês a mês com exportação individual para PDF e Excel
+              Demonstrativo detalhado de despesas do mês selecionado com exportação para PDF e Excel
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
@@ -706,10 +769,6 @@
 
         </div>
 
-        <!-- Grade com os 12 Cards Mensais -->
-        <div id="report-monthly-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <!-- Injetado dinamicamente via JS -->
-        </div>
       </div>
 
       <!-- Relatório 4: Ranking das Maiores Despesas (Top 5 Contas) -->
@@ -769,7 +828,7 @@
               <h3 class="font-extrabold text-base sm:text-lg text-white leading-tight">
                 Lembrete Diário de Vencimentos
               </h3>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider shadow-2xs">
+              <span id="daily-alert-badge-days" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 uppercase tracking-wider shadow-2xs">
                 Atenção: 2 Dias Úteis
               </span>
             </div>
@@ -798,7 +857,7 @@
         </div>
         <div class="flex items-center gap-3">
           <div class="text-right">
-            <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Total a Pagar (Próx. 2 Dias Úteis)</span>
+            <span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block" id="daily-alert-summary-label">Total a Pagar (Próx. 2 Dias Úteis)</span>
             <span class="text-sm sm:text-base font-extrabold text-emerald-950 dark:text-emerald-100 tabular-nums" id="daily-alert-total-amount">
               R$ 0,00
             </span>
@@ -958,20 +1017,6 @@
       <!-- Formulário do Modal -->
       <form id="bill-form" class="p-6 space-y-4">
         <input type="hidden" id="bill-id" />
-        <input type="hidden" id="bill-month-key" />
-
-        <!-- Alerta Informativo de Isolamento Mensal para Despesa Fixa -->
-        <div
-          id="bill-fixed-month-badge"
-          class="hidden p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2.5"
-        >
-          <div class="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 shrink-0">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
-          </div>
-          <span id="bill-fixed-month-badge-text" class="leading-relaxed">
-            Alterações exclusivas para este mês de referência. Os meses anteriores e posteriores estão preservados.
-          </span>
-        </div>
 
         <!-- Descrição -->
         <div>
@@ -1267,7 +1312,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO (SUPORTA DESPESAS FIXAS E VARIÁVEIS)        -->
+  <!-- MODAL: CONFIRMAÇÃO DE EXCLUSÃO DE CONTA                                   -->
   <!-- ========================================================================= -->
   <div
     id="delete-modal"
@@ -1278,76 +1323,13 @@
         <i data-lucide="trash-2" class="w-6 h-6"></i>
       </div>
       <div class="text-center">
-        <div id="delete-modal-badge" class="hidden mb-1.5 flex justify-center">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
-            Despesa Fixa Recorrente
-          </span>
-        </div>
         <h4 class="text-lg font-bold text-slate-900 dark:text-white" id="delete-modal-title">Excluir Conta?</h4>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="delete-modal-desc-container">
           Tem certeza de que deseja remover <strong id="delete-bill-description" class="text-slate-800 dark:text-slate-200"></strong> no valor de <strong id="delete-bill-amount" class="text-slate-800 dark:text-slate-200"></strong>?
         </p>
       </div>
 
-      <!-- OPÇÕES DE EXCLUSÃO PARA DESPESA FIXA (DAQUELE MÊS PARA FRENTE VS TODOS OS MESES) -->
-      <div id="delete-fixed-options" class="hidden space-y-2.5 pt-1">
-        <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-[11px] text-amber-900 dark:text-amber-200">
-          <div class="flex items-center gap-1.5 font-bold mb-0.5">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-700"></i>
-            <span>Mês de Referência: <span id="delete-fixed-month-label" class="underline">Novembro/2026</span></span>
-          </div>
-          <span>Esta despesa se repete nos meses. Escolha como deseja realizar a exclusão:</span>
-        </div>
-
-        <!-- Botão Primário: Excluir Deste Mês em Diante (Preserva anteriores) -->
-        <button
-          type="button"
-          id="btn-delete-fixed-from-month"
-          class="w-full p-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-left shadow-xs transition-all active:scale-[0.99] cursor-pointer flex items-start gap-3 group"
-        >
-          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
-            <i data-lucide="calendar-x" class="w-4 h-4 text-white"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
-              <span>Excluir Deste Mês em Diante</span>
-              <span class="text-[9px] px-1.5 py-0.2 rounded bg-white text-rose-800 font-extrabold uppercase">Recomendado</span>
-            </div>
-            <p class="text-[11px] text-rose-100 mt-0.5 leading-tight">
-              Exclui a partir deste mês e de todos os seguintes. <strong>Meses anteriores continuam salvos no histórico.</strong>
-            </p>
-          </div>
-        </button>
-
-        <!-- Botão Secundário: Excluir de Todos os Meses -->
-        <button
-          type="button"
-          id="btn-delete-fixed-all-months"
-          class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-left transition-all active:scale-[0.99] cursor-pointer flex items-start gap-2.5 text-slate-700 dark:text-slate-300"
-        >
-          <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 mt-0.5 text-slate-500">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="font-semibold text-xs text-slate-800 dark:text-slate-200">
-              Excluir de Todos os Meses
-            </div>
-            <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">
-              Apaga a despesa completamente de todo o sistema (inclusive meses anteriores).
-            </p>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          id="btn-cancel-delete-fixed"
-          class="w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          Cancelar
-        </button>
-      </div>
-
-      <!-- BOTÕES PADRÃO (PARA DESPESAS VARIÁVEIS) -->
+      <!-- BOTÕES DE AÇÃO -->
       <div id="delete-standard-actions" class="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
@@ -1364,6 +1346,1218 @@
           Sim, Excluir
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 1. CADASTRO & GESTÃO DE USUÁRIOS                                   -->
+  <!-- ========================================================================= -->
+  <div
+    id="users-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 animate-modal-in max-h-[92vh] flex flex-col my-auto">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Cadastro & Gestão de Usuários</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Acessos & Funções
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Controle de operadores, financeiro e administradores do 2º Oficial de Imóveis de SJC
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-users-modal"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          title="Fechar Janela"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Scroll -->
+      <div class="overflow-y-auto flex-1 py-4 space-y-4 pr-1">
+        
+        <!-- Formulário de Usuário (Novo / Edição) -->
+        <div class="p-3.5 sm:p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5" id="user-form-title">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>Cadastrar Novo Usuário</span>
+            </h4>
+            <button
+              type="button"
+              id="btn-reset-user-form"
+              class="text-[11px] text-slate-500 hover:text-emerald-700 underline hidden"
+            >
+              Cancelar Edição / Novo
+            </button>
+          </div>
+
+          <form id="user-form" class="space-y-3">
+            <input type="hidden" id="user-id" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="user-name" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  id="user-name"
+                  required
+                  placeholder="Ex: Wesley Paranhos"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label for="user-email" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  E-mail / Login *
+                </label>
+                <input
+                  type="email"
+                  id="user-email"
+                  required
+                  placeholder="Ex: wesley@2oficialsjc.com.br"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="user-role" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Perfil / Função *
+                </label>
+                <select
+                  id="user-role"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="admin">Administrador (Total)</option>
+                  <option value="financeiro" selected>Financeiro</option>
+                  <option value="operador">Operador</option>
+                  <option value="consulta">Consulta (Visualização)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="user-location" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Unidade / Lotação *
+                </label>
+                <select
+                  id="user-location"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="LD">LD (Geral)</option>
+                  <option value="REC">REC</option>
+                  <option value="SE">SE</option>
+                  <option value="Todas">Todas as Unidades</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="user-status" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Status *
+                </label>
+                <select
+                  id="user-status"
+                  class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="submit"
+                id="btn-submit-user"
+                class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span id="btn-submit-user-text">Salvar Usuário</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Lista de Usuários Cadastrados -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="list" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Usuários Ativos no Sistema</span>
+            </h4>
+            <span id="users-total-count-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              0 usuários
+            </span>
+          </div>
+
+          <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-xs text-left" id="users-table">
+                <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3 font-semibold">Usuário</th>
+                    <th class="py-2.5 px-3 font-semibold">Perfil / Função</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Unidade</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Status</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                  <!-- Injetado dinamicamente via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+        <button
+          type="button"
+          id="btn-close-users-modal-bottom"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: TELA DEDICADA DE EDIÇÃO DE INFORMAÇÕES DO USUÁRIO                  -->
+  <!-- ========================================================================= -->
+  <div
+    id="edit-user-modal"
+    style="z-index: 9999;"
+    class="hidden fixed inset-0 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs modal-backdrop overflow-y-auto"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-emerald-200 dark:border-emerald-900/60 p-5 sm:p-6 animate-modal-in my-auto space-y-4">
+      
+      <!-- Cabeçalho da Tela de Edição -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+          <div id="modal-edit-user-avatar" class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-extrabold text-sm flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+            WP
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white" id="edit-user-modal-title">
+                Editar Informações do Usuário
+              </h3>
+              <span id="modal-edit-user-badge-role" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Administrador
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" id="edit-user-modal-subtitle">
+              Altere os dados de cadastro, nível de acesso e lotação
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-edit-user-modal"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title="Fechar Janela"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Formulário de Edição do Usuário -->
+      <form id="modal-edit-user-form" class="space-y-3.5">
+        <input type="hidden" id="modal-edit-user-id" />
+
+        <!-- Nome Completo -->
+        <div>
+          <label for="modal-edit-user-name" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Nome Completo *</span>
+          </label>
+          <input
+            type="text"
+            id="modal-edit-user-name"
+            required
+            placeholder="Ex: Wesley Paranhos"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder-slate-400"
+          />
+        </div>
+
+        <!-- E-mail / Login Institucional -->
+        <div>
+          <label for="modal-edit-user-email" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+            <i data-lucide="mail" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>E-mail / Login *</span>
+          </label>
+          <input
+            type="email"
+            id="modal-edit-user-email"
+            required
+            placeholder="Ex: wesley@2oficialsjc.com.br"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500 focus:outline-none placeholder-slate-400"
+          />
+        </div>
+
+        <!-- Grid: Perfil, Unidade e Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="modal-edit-user-role" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Perfil / Função *</span>
+            </label>
+            <select
+              id="modal-edit-user-role"
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+            >
+              <option value="admin">Administrador (Total)</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="operador">Operador</option>
+              <option value="consulta">Consulta (Visualização)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="modal-edit-user-location" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Unidade *</span>
+            </label>
+            <select
+              id="modal-edit-user-location"
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+            >
+              <option value="LD">LD (Geral)</option>
+              <option value="REC">REC</option>
+              <option value="SE">SE</option>
+              <option value="Todas">Todas as Unidades</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="modal-edit-user-status" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+              <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Status *</span>
+            </label>
+            <select
+              id="modal-edit-user-status"
+              class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+            >
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Barra de Identificação do Registro -->
+        <div class="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="fingerprint" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+            <span>ID: <code id="modal-edit-user-id-display" class="font-mono text-emerald-800 dark:text-emerald-300">usr_...</code></span>
+          </span>
+          <span id="modal-edit-user-created-at" class="text-slate-400">Cadastrado no sistema</span>
+        </div>
+
+        <!-- Botões de Ação do Rodapé -->
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            id="btn-cancel-edit-user-modal"
+            class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            id="btn-submit-modal-edit-user"
+            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 2. CADASTRO & GESTÃO DE FERIADOS                                   -->
+  <!-- ========================================================================= -->
+  <div
+    id="holidays-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 animate-modal-in max-h-[92vh] flex flex-col my-auto">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+            <i data-lucide="calendar-days" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Cadastro de Feriados & Calendário Cartorário</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                SJC & Nacional
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Feriados municipais de São José dos Campos e nacionais integrados ao cálculo de dias úteis e vencimentos
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-holidays-modal"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          title="Fechar Janela"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Abas de Navegação Interna do Calendário: Feriados vs Parametrização -->
+      <div class="flex items-center gap-1 pt-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <button
+          type="button"
+          id="tab-btn-holidays-calendar"
+          class="tab-holidays-btn px-3.5 py-2 rounded-t-lg text-xs font-bold border-b-2 border-amber-600 text-amber-900 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 flex items-center gap-1.5 cursor-pointer transition-colors"
+          data-tab="calendar"
+        >
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+          <span>Calendário de Feriados</span>
+        </button>
+
+        <button
+          type="button"
+          id="tab-btn-holidays-params"
+          class="tab-holidays-btn px-3.5 py-2 rounded-t-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-1.5 cursor-pointer transition-colors"
+          data-tab="params"
+        >
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+          <span>Parametrização do Aviso Prévio</span>
+          <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+            Regra Cartorária
+          </span>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Scroll -->
+      <div class="overflow-y-auto flex-1 py-4 pr-1">
+
+        <!-- =================================================================== -->
+        <!-- ABA 1: CALENDÁRIO DE FERIADOS                                       -->
+        <!-- =================================================================== -->
+        <div id="tab-content-holidays-calendar" class="space-y-4">
+          <!-- Barra de Filtros e Ações Rápidas -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Filtrar por Ano:</span>
+              <select
+                id="holiday-filter-year"
+                class="px-2.5 py-1 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white"
+              >
+                <option value="todos">Todos os Anos</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026 (Ano Vigente)</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+              </select>
+              <span id="holidays-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                0 feriados
+              </span>
+            </div>
+
+            <button
+              type="button"
+              id="btn-reset-default-holidays"
+              class="px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-800/70 text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Restaura os feriados oficiais de São José dos Campos (27/07, 19/03, etc.) e federais"
+            >
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Restaurar Feriados Padrão SJC</span>
+            </button>
+          </div>
+
+          <!-- Formulário de Novo Feriado -->
+          <div class="p-3.5 sm:p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40">
+            <h4 class="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+              <span>Adicionar Novo Feriado</span>
+            </h4>
+
+            <form id="holiday-form" class="space-y-3">
+              <input type="hidden" id="holiday-id" />
+
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <div class="sm:col-span-3">
+                  <label for="holiday-date" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Data do Feriado *
+                  </label>
+                  <input
+                    type="date"
+                    id="holiday-date"
+                    required
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div class="sm:col-span-5">
+                  <label for="holiday-name" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Nome / Descrição do Feriado *
+                  </label>
+                  <input
+                    type="text"
+                    id="holiday-name"
+                    required
+                    placeholder="Ex: Aniversário de São José dos Campos"
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div class="sm:col-span-4">
+                  <label for="holiday-type" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Abrangência / Tipo *
+                  </label>
+                  <select
+                    id="holiday-type"
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white"
+                  >
+                    <option value="municipal_sjc">Municipal (SJC)</option>
+                    <option value="estadual_sp">Estadual (SP)</option>
+                    <option value="nacional" selected>Nacional</option>
+                    <option value="bancario_cartorio">Bancário / Cartorário</option>
+                    <option value="facultativo">Ponto Facultativo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  id="btn-submit-holiday"
+                  class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  <span>Adicionar Feriado</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Tabela de Feriados -->
+          <div class="space-y-2">
+            <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+              <div class="overflow-x-auto max-h-72">
+                <table class="w-full text-xs text-left" id="holidays-table">
+                  <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 sticky top-0">
+                    <tr>
+                      <th class="py-2.5 px-3 font-semibold">Data</th>
+                      <th class="py-2.5 px-3 font-semibold">Dia da Semana</th>
+                      <th class="py-2.5 px-3 font-semibold">Nome do Feriado</th>
+                      <th class="py-2.5 px-3 font-semibold text-center">Abrangência</th>
+                      <th class="py-2.5 px-3 font-semibold text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="holidays-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                    <!-- Injetado dinamicamente via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- ABA 2: PARAMETRIZAÇÃO DO AVISO PRÉVIO & REGRAS CARTORÁRIAS          -->
+        <!-- =================================================================== -->
+        <div id="tab-content-holidays-params" class="hidden space-y-4">
+          
+          <!-- Banner de Base Legal e Institucional -->
+          <div class="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 mt-0.5">
+              <i data-lucide="scale" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs">
+              <h4 class="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                <span>Diretriz Cartorária & Bancária (Art. 1º Lei Federal nº 7.089/1983)</span>
+                <span class="px-1.5 py-0.2 rounded text-[10px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 font-extrabold uppercase">Legal</span>
+              </h4>
+              <p class="text-emerald-800/90 dark:text-emerald-300/90 mt-1 leading-relaxed">
+                Vencimentos que recaiam em sábados, domingos ou feriados oficiais prorrogam-se automaticamente para o <strong>primeiro dia útil bancário subsequente</strong>. O sistema calcula a antecedência de aviso estritamente em <strong>dias úteis</strong> anteriores a esse vencimento efetivo.
+              </p>
+            </div>
+          </div>
+
+          <!-- Formulário de Parametrização -->
+          <form id="holiday-params-form" class="space-y-4">
+            
+            <!-- Configuração 1: Dias de Antecedência do Aviso -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label for="param-alert-business-days" class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <i data-lucide="bell" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Antecedência do Aviso de Vencimento</span>
+                  </label>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Quantos dias úteis antes do efetivo vencimento o sistema deve disparar alertas e sinalizações
+                  </p>
+                </div>
+                <div class="sm:w-64 shrink-0">
+                  <select
+                    id="param-alert-business-days"
+                    class="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-950 dark:text-emerald-200 focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="1">1 dia útil antes</option>
+                    <option value="2" selected>2 dias úteis antes (Recomendado)</option>
+                    <option value="3">3 dias úteis antes</option>
+                    <option value="5">5 dias úteis (1 semana útil antes)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuração 2: Prorrogação Automática & Popup -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id="param-auto-prorogate"
+                  checked
+                  class="mt-1 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <label for="param-auto-prorogate" class="text-xs cursor-pointer">
+                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Prorrogação Automática</span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Posterga o vencimento de sábados, domingos e feriados para o próximo dia útil bancário.
+                  </span>
+                </label>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id="param-auto-popup"
+                  checked
+                  class="mt-1 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                />
+                <label for="param-auto-popup" class="text-xs cursor-pointer">
+                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Lembrete Diário em Popup</span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Abre automaticamente a janela de aviso ao recarregar a tela caso haja despesas a vencer.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Configuração 3: Tipos de Feriados Considerados no Cálculo -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <i data-lucide="check-square" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Abrangências de Feriados Consideradas no Cálculo de Dias Úteis</span>
+                </span>
+                <span class="text-[10px] text-slate-400">Marque as que fecham o cartório/bancos</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1 text-xs">
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                  <input type="checkbox" name="param-hol-type" value="municipal_sjc" checked class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Municipal (SJC)</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                  <input type="checkbox" name="param-hol-type" value="estadual_sp" checked class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Estadual (SP)</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                  <input type="checkbox" name="param-hol-type" value="nacional" checked class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Nacional</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                  <input type="checkbox" name="param-hol-type" value="bancario_cartorio" checked class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Bancário / Cartorário</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-emerald-50/50">
+                  <input type="checkbox" name="param-hol-type" value="facultativo" checked class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Ponto Facultativo</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Simulador / Teste Interativo de Vencimento Efetivo -->
+            <div class="p-3.5 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                  <i data-lucide="calculator" class="w-4 h-4 text-amber-600"></i>
+                  <span>Simulador de Vencimento Efetivo & Aviso Prévio</span>
+                </span>
+                <span class="text-[10px] text-amber-700 dark:text-amber-400">Verifique na prática qualquer data do ano</span>
+              </div>
+
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="date"
+                  id="sim-date-input"
+                  class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-800 text-xs text-slate-900 dark:text-white font-medium"
+                />
+                <button
+                  type="button"
+                  id="btn-run-holiday-sim"
+                  class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                >
+                  Testar Cálculo
+                </button>
+              </div>
+
+              <!-- Caixa de Resultado da Simulação -->
+              <div id="sim-result-box" class="p-3 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900/60 text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                <p class="text-slate-400 text-[11px]">Selecione uma data acima (ex: final de semana, 19/03, Carnaval ou 27/07) e clique em "Testar Cálculo".</p>
+              </div>
+            </div>
+
+            <!-- Botões de Ação da Parametrização -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                id="btn-reset-holiday-params"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Restaurar Parâmetros Padrão
+              </button>
+
+              <button
+                type="submit"
+                id="btn-save-holiday-params"
+                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span>Salvar Parametrização</span>
+              </button>
+            </div>
+          </form>
+
+        </div>
+
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+        <button
+          type="button"
+          id="btn-close-holidays-modal-bottom"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 3. GERENCIADOR DE DESPESAS (CATEGORIAS, FIXAS & ORÇAMENTO)         -->
+  <!-- ========================================================================= -->
+  <!-- ========================================================================= -->
+  <!-- MODAL: 3. GERENCIADOR DE DESPESAS FIXAS                                    -->
+  <!-- ========================================================================= -->
+  <div
+    id="expense-manager-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 animate-modal-in max-h-[92vh] flex flex-col my-auto">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="pin" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Gerenciador de Despesas Fixas</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Apenas Despesas Fixas
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Controle centralizado, cadastro, edição e exclusão das despesas fixas recorrentes do cartório
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-expense-manager-modal"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title="Fechar Janela"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Scroll -->
+      <div class="overflow-y-auto flex-1 py-4 pr-1 space-y-4">
+        
+        <!-- Mini-Cards de Despesas Fixas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+              <i data-lucide="pin" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400 tracking-wider">Total Mensal Comprometido (Fixas)</span>
+              <h4 class="text-lg font-bold text-slate-900 dark:text-white" id="fixed-exp-total-monthly">R$ 0,00</h4>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+              <i data-lucide="repeat" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Despesas Fixas Cadastradas</span>
+              <h4 class="text-lg font-bold text-slate-900 dark:text-white" id="fixed-exp-total-count">0 contas</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Ações: Botão Adicionar Despesa Fixa e Lançar no Mês -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+              <span>Repositório de Despesas Fixas</span>
+            </span>
+            <span id="recurring-exp-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              Salvas no Repositório
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Botão Principal: Adicionar Despesa Fixa -->
+            <button
+              type="button"
+              id="btn-open-recurring-form"
+              class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Cadastrar uma nova despesa fixa neste repositório"
+            >
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+              <span>+ Adicionar Despesa Fixa</span>
+            </button>
+
+            <!-- Botão Rápido: Lançar no Mês Selecionado -->
+            <button
+              type="button"
+              id="btn-launch-all-recurring"
+              class="px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-emerald-800 dark:text-emerald-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Lança todas as despesas deste repositório na lista de despesas do mês selecionado"
+            >
+              <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+              <span>Lançar no Mês Atual</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Formulário de Nova / Edição de Despesa Fixa (Expansível) -->
+        <div id="recurring-form-card" class="hidden p-3.5 sm:p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/90 dark:border-emerald-900/50 space-y-3 transition-all">
+          <div class="flex items-center justify-between pb-2 border-b border-emerald-100 dark:border-emerald-900/40">
+            <h4 id="recurring-form-title" class="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="pin" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>Adicionar Nova Despesa Fixa no Repositório</span>
+            </h4>
+            <button
+              type="button"
+              id="btn-close-recurring-form"
+              class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              title="Fechar formulário"
+            >
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <form id="recurring-bill-form" class="space-y-3">
+            <input type="hidden" id="recurring-bill-id" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <!-- Descrição -->
+              <div class="sm:col-span-5">
+                <label for="recurring-description" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Descrição da Despesa Fixa *
+                </label>
+                <input
+                  type="text"
+                  id="recurring-description"
+                  required
+                  placeholder="Ex: Siscart, Aluguel Sede, Provedor Fibra..."
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <!-- Valor Base -->
+              <div class="sm:col-span-3">
+                <label for="recurring-amount" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Valor Base (R$) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  id="recurring-amount"
+                  required
+                  placeholder="0,00"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white tabular-nums focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <!-- Dia de Vencimento Padrão (Todo dia X) -->
+              <div class="sm:col-span-4">
+                <label for="recurring-due-day" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Dia Vencimento Padrão *
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-slate-500 whitespace-nowrap">Todo dia</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    id="recurring-due-day"
+                    required
+                    placeholder="9"
+                    class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white text-center tabular-nums focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <!-- Local -->
+              <div class="sm:col-span-3">
+                <label for="recurring-location" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Local / Unidade *
+                </label>
+                <select
+                  id="recurring-location"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                >
+                  <option value="LD">LD - Livro Diário</option>
+                  <option value="REC">REC - Reconhecimento</option>
+                  <option value="SE">SE - Setor Extraordinário</option>
+                </select>
+              </div>
+
+              <!-- Categoria -->
+              <div class="sm:col-span-4">
+                <label for="recurring-category" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Categoria *
+                </label>
+                <select
+                  id="recurring-category"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                >
+                  <!-- Preenchido dinamicamente -->
+                </select>
+              </div>
+
+              <!-- Método de Pagamento -->
+              <div class="sm:col-span-5">
+                <label for="recurring-payment-method" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Método de Pagamento Padrão
+                </label>
+                <select
+                  id="recurring-payment-method"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                >
+                  <!-- Preenchido dinamicamente -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div>
+              <label for="recurring-notes" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Observações / Dados Bancários / Link (Opcional)
+              </label>
+              <input
+                type="text"
+                id="recurring-notes"
+                placeholder="Ex: Chave PIX, contrato de prestação de serviços..."
+                class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400"
+              />
+            </div>
+
+            <!-- Botões de Ação do Form -->
+            <div class="flex items-center justify-end gap-2 pt-1 border-t border-emerald-100 dark:border-emerald-900/40">
+              <button
+                type="button"
+                id="btn-cancel-recurring-form"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                id="btn-save-recurring"
+                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span id="btn-save-recurring-text">Salvar Despesa Fixa</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Tabela de Despesas Fixas -->
+        <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+          <div class="overflow-x-auto max-h-80">
+            <table class="w-full text-xs text-left" id="fixed-bills-table">
+              <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 sticky top-0">
+                <tr>
+                  <th class="py-2.5 px-3 font-semibold">Descrição</th>
+                  <th class="py-2.5 px-3 font-semibold text-center">Local</th>
+                  <th class="py-2.5 px-3 font-semibold">Categoria</th>
+                  <th class="py-2.5 px-3 font-semibold text-center">Vencimento Padrão</th>
+                  <th class="py-2.5 px-3 font-semibold text-right">Valor Base</th>
+                  <th class="py-2.5 px-3 font-semibold text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="fixed-bills-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                <!-- Injetado dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+        <button
+          type="button"
+          id="btn-close-expense-manager-modal-bottom"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 4. GERENCIAR CATEGORIAS DE DESPESAS                                -->
+  <!-- ========================================================================= -->
+  <div
+    id="categories-modal"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs modal-backdrop"
+  >
+    <div class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 animate-modal-in max-h-[92vh] flex flex-col my-auto">
+      
+      <!-- Cabeçalho do Modal de Categorias -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <i data-lucide="tags" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Gerenciar Categorias de Despesas</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Classificação Contábil
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Personalize, visualize em lista e edite as categorias de custos das contas do cartório
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="btn-close-categories-modal"
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          title="Fechar Janela"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Conteúdo com Scroll -->
+      <div class="overflow-y-auto flex-1 py-4 pr-1 space-y-4">
+        
+        <!-- Form de Nova Categoria / Edição -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700" id="category-form-card">
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 id="category-form-title" class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span id="category-form-title-text">Adicionar Nova Categoria de Despesa</span>
+            </h4>
+            <button
+              type="button"
+              id="btn-cancel-cat-form"
+              class="hidden text-[11px] font-semibold text-slate-500 hover:text-emerald-700 underline cursor-pointer"
+            >
+              Cancelar Edição / Nova
+            </button>
+          </div>
+
+          <form id="category-form" class="space-y-2.5">
+            <input type="hidden" id="cat-id" value="" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <div class="sm:col-span-5">
+                <label for="cat-name" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nome da Categoria *
+                </label>
+                <input
+                  type="text"
+                  id="cat-name"
+                  required
+                  placeholder="Ex: Softwares & TI, Manutenção..."
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div class="sm:col-span-4">
+                <label for="cat-icon" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Ícone Representativo
+                </label>
+                <select
+                  id="cat-icon"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                >
+                  <option value="tag">Etiqueta (Geral)</option>
+                  <option value="cpu">Tecnologia / TI</option>
+                  <option value="wrench">Manutenção / Reparos</option>
+                  <option value="building-2">Instalações / Prédio</option>
+                  <option value="file-badge">Cartório / Certidões</option>
+                  <option value="shopping-cart">Suprimentos / Almoxarifado</option>
+                  <option value="shield">Segurança / Vigilância</option>
+                  <option value="phone">Telefonia / Internet</option>
+                  <option value="scale">Jurídico / Honorários</option>
+                  <option value="sparkles">Limpeza / Conservação</option>
+                  <option value="home">Moradia / Predial</option>
+                  <option value="utensils">Alimentação / Copa</option>
+                  <option value="car">Transporte</option>
+                  <option value="heart-pulse">Saúde</option>
+                  <option value="graduation-cap">Educação</option>
+                  <option value="briefcase">Serviços PJ / Negócios</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="cat-color" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Cor de Destaque
+                </label>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="cat-color"
+                    value="#059669"
+                    class="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 p-0.5"
+                  />
+                  <span class="text-[11px] text-slate-500 font-mono" id="cat-color-hex">#059669</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200 dark:border-slate-700/60">
+              <button
+                type="submit"
+                id="btn-submit-category"
+                class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <span id="btn-submit-category-text">Salvar Categoria</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Grade de Categorias Cadastradas com Barra de Ações -->
+        <div class="space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-2">
+              <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>Categorias Cadastradas</span>
+              </h4>
+              <span id="categories-count-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                0 categorias
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                id="btn-focus-new-cat"
+                class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+                title="Criar uma nova categoria de despesa"
+              >
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>+ Nova Categoria</span>
+              </button>
+              <button
+                type="button"
+                id="btn-reset-categories-default"
+                class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium transition-colors cursor-pointer"
+                title="Restaurar lista de categorias padrão do cartório"
+              >
+                Restaurar Padrões
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista Estruturada de Categorias de Despesas -->
+          <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs bg-white dark:bg-slate-900">
+            <div class="overflow-x-auto max-h-[380px]">
+              <table class="w-full text-xs text-left" id="categories-table">
+                <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th class="py-2.5 px-3 font-semibold">Categoria</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Cor de Destaque</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Contas em Uso</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">Total Acumulado</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Classificação</th>
+                    <th class="py-2.5 px-3 font-semibold text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="categories-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                  <!-- Injetado dinamicamente via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé do Modal de Categorias -->
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+        <button
+          type="button"
+          id="btn-close-categories-modal-bottom"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          Fechar
+        </button>
+      </div>
+
     </div>
   </div>
 

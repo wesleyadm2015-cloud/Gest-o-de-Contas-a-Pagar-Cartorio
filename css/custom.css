@@ -113,6 +113,7 @@ table tbody tr:hover {
 
 /* Inputs, Selects, Áreas de Texto e Dropdowns */
 input[type="text"]:not(.date-seg-day):not(.date-seg-month):not(.date-seg-year),
+input[type="email"],
 input[type="date"],
 input[type="number"],
 select:not(.btn-location-select):not(.btn-fv-select),
@@ -168,15 +169,25 @@ button.border-slate-200:hover,
   background-color: #047857 !important;
 }
 
-/* Modal de Criação / Edição, Confirmação, NF Rápida e Demonstrativo */
+/* Modal de Criação / Edição, Confirmação, NF Rápida, Demonstrativo, Usuários, Feriados e Gerenciador */
 #bill-modal .bg-white,
 #delete-modal .bg-white,
 #quick-nf-modal .bg-white,
 #statement-modal .bg-white,
+#users-modal .bg-white,
+#edit-user-modal .bg-white,
+#holidays-modal .bg-white,
+#expense-manager-modal .bg-white,
+#categories-modal .bg-white,
 .dark #bill-modal .bg-slate-900,
 .dark #delete-modal .bg-slate-900,
 .dark #quick-nf-modal .bg-slate-900,
-.dark #statement-modal .bg-slate-900 {
+.dark #statement-modal .bg-slate-900,
+.dark #users-modal .bg-slate-900,
+.dark #edit-user-modal .bg-slate-900,
+.dark #holidays-modal .bg-slate-900,
+.dark #expense-manager-modal .bg-slate-900,
+.dark #categories-modal .bg-slate-900 {
   background-color: #f5fcf8 !important;
   border-color: #bce7ce !important;
   box-shadow: 0 10px 25px rgba(6, 78, 59, 0.15) !important;
@@ -186,7 +197,11 @@ button.border-slate-200:hover,
 .dark #bill-modal .bg-slate-800\/40,
 #delete-modal .bg-slate-50\/50,
 #quick-nf-modal .bg-slate-50,
-#statement-modal .bg-slate-50 {
+#statement-modal .bg-slate-50,
+#users-modal .bg-slate-50,
+#edit-user-modal .bg-slate-50,
+#holidays-modal .bg-slate-50,
+#expense-manager-modal .bg-slate-50 {
   background-color: #d2f0dd !important;
   border-color: #bce7ce !important;
 }

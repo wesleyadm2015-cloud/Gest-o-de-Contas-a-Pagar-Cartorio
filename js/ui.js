@@ -399,11 +399,18 @@
                     <span class="text-xs font-semibold tabular-nums ${dueBadgeClass}">
                       ${bill.relativeDate.type === 'today' ? '<i data-lucide="clock" class="w-3 h-3 inline animate-pulse mr-1"></i>' : ''}
                       ${bill.relativeDate.type === 'overdue' ? '<i data-lucide="alert-octagon" class="w-3 h-3 inline mr-1"></i>' : ''}
-                      ${window.AppConfig.utils.formatDate(bill.dueDate)}
+                      ${window.AppConfig.utils.formatDate(bill.effectiveISO || bill.dueDate)}
                     </span>
-                    <span class="text-[10px] text-slate-400 font-medium">
-                      ${bill.relativeDate.text}
-                    </span>
+                    <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+                      <span class="text-[10px] text-slate-400 font-medium">
+                        ${bill.relativeDate.text}
+                      </span>
+                      ${
+                        bill.isProrogated
+                          ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 border border-amber-200" title="Vencimento nominal ${window.AppConfig.utils.formatDate(bill.dueDate)} prorrogado para ${window.AppConfig.utils.formatDate(bill.effectiveISO)} por feriado/final de semana">⚖️ Prorrogado</span>`
+                          : ''
+                      }
+                    </div>
                   </div>
                 </td>
 
@@ -942,16 +949,12 @@
      * Abre o modal de cadastro/edição de conta
      * @param {'create'|'edit'} mode
      * @param {Object|null} bill
-     * @param {Object|null} context { monthKey, targetYear, targetMonth }
      */
-    openBillModal(mode = 'create', bill = null, context = null) {
+    openBillModal(mode = 'create', bill = null) {
       const modal = document.getElementById('bill-modal');
       const modalTitle = document.getElementById('modal-title');
       const form = document.getElementById('bill-form');
       const billIdInput = document.getElementById('bill-id');
-      const monthKeyInput = document.getElementById('bill-month-key');
-      const fixedMonthBadge = document.getElementById('bill-fixed-month-badge');
-      const fixedMonthBadgeText = document.getElementById('bill-fixed-month-badge-text');
 
       if (!modal || !form) return;
 
@@ -961,12 +964,6 @@
       this.populateSelectOptions();
 
       const submitBtnText = document.getElementById('btn-submit-bill-text');
-      const isFixed = bill && (bill.expenseType === 'fixa' || bill.category === 'fixas');
-      const targetMonthKey = (context && context.monthKey) || bill?.monthKey || (bill?.dueDate ? bill.dueDate.substring(0, 7) : '');
-
-      if (monthKeyInput) {
-        monthKeyInput.value = targetMonthKey || '';
-      }
 
       if (mode === 'edit' && bill) {
         modalTitle.textContent = 'Editar Despesa Lançada';
@@ -996,27 +993,11 @@
         if (paymentDateInput) {
           paymentDateInput.value = bill.paymentDate || '';
         }
-
-        // Se for despesa fixa, exibe badge informativo de proteção dos outros meses
-        if (isFixed && targetMonthKey && fixedMonthBadge) {
-          fixedMonthBadge.classList.remove('hidden');
-          const parts = targetMonthKey.split('-');
-          const yr = parts[0];
-          const moIdx = parseInt(parts[1], 10) - 1;
-          const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[moIdx]) || targetMonthKey;
-          if (fixedMonthBadgeText) {
-            fixedMonthBadgeText.innerHTML = `Alterações exclusivas para <strong>${monthName} de ${yr}</strong>. As informações dos meses anteriores e dos meses seguintes estão preservadas.`;
-          }
-        } else if (fixedMonthBadge) {
-          fixedMonthBadge.classList.add('hidden');
-        }
       } else {
         modalTitle.textContent = 'Nova Conta / Despesa';
         if (submitBtnText) submitBtnText.textContent = 'Cadastrar Despesa';
 
         billIdInput.value = '';
-        if (monthKeyInput) monthKeyInput.value = '';
-        if (fixedMonthBadge) fixedMonthBadge.classList.add('hidden');
 
         const invoiceNumInput = document.getElementById('bill-invoice-number');
         if (invoiceNumInput) invoiceNumInput.value = '';
@@ -1095,15 +1076,29 @@
         }
       }
 
+      const alertAdvanceDays = window.AppConfig.HOLIDAY_PARAMS?.alertAdvanceBusinessDays || 2;
+      const alertBadge = document.getElementById('daily-alert-badge-days');
+      if (alertBadge) {
+        alertBadge.textContent = `Atenção: ${alertAdvanceDays} ${alertAdvanceDays === 1 ? 'Dia Útil' : 'Dias Úteis'}`;
+      }
+      const subtitle = document.getElementById('daily-alert-subtitle');
+      if (subtitle) {
+        subtitle.textContent = `Contas com vencimento em até ${alertAdvanceDays} dias úteis de antecedência considerando o calendário cartorário`;
+      }
+      const summaryLabel = document.getElementById('daily-alert-summary-label');
+      if (summaryLabel) {
+        summaryLabel.textContent = `Total a Pagar (Próx. ${alertAdvanceDays} Dias Úteis)`;
+      }
+
       if (upcomingBills.length === 0) {
         listContainer.innerHTML = `
           <div class="py-12 px-4 text-center">
             <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <i data-lucide="check-circle-2" class="w-7 h-7"></i>
             </div>
-            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">Nenhuma conta com vencimento nos próximos 2 dias úteis!</h4>
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">Nenhuma conta com vencimento nos próximos ${alertAdvanceDays} dias úteis!</h4>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
-              Seus compromissos financeiros imediatos estão em dia.
+              Seus compromissos financeiros imediatos estão em dia considerando o calendário de feriados.
             </p>
           </div>
         `;
@@ -1130,16 +1125,18 @@
             iconBg = 'bg-amber-100 dark:bg-amber-950 text-amber-600';
           } else {
             urgencyBadgeClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800';
-            urgencyLabel = '📅 Vence em 2 dias úteis';
+            urgencyLabel = `📅 Vence em ${bDays} dias úteis`;
             borderClass = 'border-emerald-300 dark:border-emerald-900/80';
             bgClass = 'bg-emerald-50/20 dark:bg-emerald-950/10';
             iconBg = 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600';
           }
 
-          const dueDateObj = bill.effectiveDueDate || (bill.dueDate ? new Date(bill.dueDate + 'T00:00:00') : new Date());
-          const dayName = window.AppConfig.utils.getDayOfWeekName(dueDateObj);
+          const effectiveDateObj = bill.effectiveDueDate || (bill.dueDate ? window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate) : new Date());
+          const dayName = window.AppConfig.utils.getDayOfWeekName(effectiveDateObj);
           const loc = bill.location === 'CG' ? 'LD' : (bill.location || 'LD');
           const locBadgeClass = loc === 'LD' || loc === 'CG' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300' : loc === 'REC' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300';
+          const effectiveDateFormatted = window.AppConfig.utils.formatDate(bill.effectiveISO || window.AppConfig.utils.toISODateString(effectiveDateObj));
+          const nominalDateFormatted = window.AppConfig.utils.formatDate(bill.dueDate);
 
           return `
             <div class="p-3 sm:p-3.5 rounded-xl border ${borderClass} ${bgClass} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all hover:shadow-xs" data-bill-id="${bill.id}">
@@ -1158,15 +1155,23 @@
                     <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${bill.expenseTypeMeta?.badgeClass || 'bg-emerald-100 text-emerald-800'}">
                       ${bill.expenseType === 'variavel' ? 'V' : 'F'}
                     </span>
-                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                      • ${dayName}, ${window.AppConfig.utils.formatDate(bill.dueDate)}
-                    </span>
+                    ${
+                      bill.isProrogated
+                        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300" title="Vencimento nominal ${nominalDateFormatted} prorrogado para ${effectiveDateFormatted} por feriado/final de semana">
+                            ⚖️ Vence: ${dayName}, ${effectiveDateFormatted} (Prorrogado)
+                           </span>`
+                        : `<span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            • ${dayName}, ${effectiveDateFormatted}
+                           </span>`
+                    }
                   </div>
                   <h4 class="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 mt-1 leading-snug">
                     ${bill.description}
                   </h4>
                   <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
                     <span>Cat: <strong class="text-slate-700 dark:text-slate-300">${bill.categoryMeta?.label || bill.category}</strong></span>
+                    ${bill.isProrogated ? `<span class="text-amber-700 dark:text-amber-300 font-semibold">• Venc. original: ${nominalDateFormatted}</span>` : ''}
+                    ${bill.holidayMatch ? `<span class="text-amber-700 dark:text-amber-300 font-bold">• Feriado: ${bill.holidayMatch.name}</span>` : ''}
                     ${bill.invoiceNumber ? `<span>• NF: <strong class="text-slate-800 dark:text-slate-200">${bill.invoiceNumber}</strong></span>` : ''}
                     ${bill.documentNumber ? `<span>• Doc: <strong class="text-slate-800 dark:text-slate-200">${bill.documentNumber}</strong></span>` : ''}
                     ${bill.notes ? `<span class="truncate max-w-[200px]" title="${bill.notes}">• Obs: ${bill.notes}</span>` : ''}
@@ -1206,86 +1211,100 @@
     }
 
     /**
-     * Popula os selects do modal e da barra de filtros com base nas constantes de config
+     * Popula os selects do modal e da barra de filtros com base nas categorias e constantes
      */
     populateSelectOptions() {
-      // Categoria no formulário
+      // Categoria no formulário de Nova / Editar Conta
       const modalCategorySelect = document.getElementById('bill-category');
-      if (modalCategorySelect && modalCategorySelect.options.length <= 1) {
+      if (modalCategorySelect) {
+        const currentVal = modalCategorySelect.value;
         modalCategorySelect.innerHTML = Object.values(window.AppConfig.CATEGORIES)
           .map((cat) => `<option value="${cat.id}">${cat.label}</option>`)
           .join('');
+        if (currentVal && window.AppConfig.CATEGORIES[currentVal]) {
+          modalCategorySelect.value = currentVal;
+        }
       }
 
       // Método de pagamento no formulário
       const modalPaymentSelect = document.getElementById('bill-payment-method');
-      if (modalPaymentSelect && modalPaymentSelect.options.length <= 1) {
+      if (modalPaymentSelect) {
+        const currentVal = modalPaymentSelect.value;
         modalPaymentSelect.innerHTML = Object.values(window.AppConfig.PAYMENT_METHODS)
           .map((pay) => `<option value="${pay.id}">${pay.label}</option>`)
           .join('');
+        if (currentVal && window.AppConfig.PAYMENT_METHODS[currentVal]) {
+          modalPaymentSelect.value = currentVal;
+        }
       }
 
-      // Popula selects adicionais se existirem no DOM
+      // Popula filtro de categorias na barra superior
       const filterCategorySelect = document.getElementById('filter-category');
-      if (filterCategorySelect && filterCategorySelect.options.length <= 1) {
+      if (filterCategorySelect) {
+        const currentFilterVal = filterCategorySelect.value || 'todos';
         let options = `<option value="todos">Todas as Categorias</option>`;
         options += Object.values(window.AppConfig.CATEGORIES)
           .map((cat) => `<option value="${cat.id}">${cat.label}</option>`)
           .join('');
         filterCategorySelect.innerHTML = options;
+        if (currentFilterVal === 'todos' || window.AppConfig.CATEGORIES[currentFilterVal]) {
+          filterCategorySelect.value = currentFilterVal;
+        }
       }
 
       const filterPaymentSelect = document.getElementById('filter-payment');
-      if (filterPaymentSelect && filterPaymentSelect.options.length <= 1) {
+      if (filterPaymentSelect) {
+        const currentFilterPay = filterPaymentSelect.value || 'todos';
         let options = `<option value="todos">Todos os Métodos</option>`;
         options += Object.values(window.AppConfig.PAYMENT_METHODS)
           .map((pay) => `<option value="${pay.id}">${pay.label}</option>`)
           .join('');
         filterPaymentSelect.innerHTML = options;
+        if (currentFilterPay === 'todos' || window.AppConfig.PAYMENT_METHODS[currentFilterPay]) {
+          filterPaymentSelect.value = currentFilterPay;
+        }
+      }
+
+      // Popula selects do formulário de Despesa Recorrente
+      const recurringCategorySelect = document.getElementById('recurring-category');
+      if (recurringCategorySelect) {
+        const currentVal = recurringCategorySelect.value;
+        recurringCategorySelect.innerHTML = Object.values(window.AppConfig.CATEGORIES)
+          .map((cat) => `<option value="${cat.id}">${cat.label}</option>`)
+          .join('');
+        if (currentVal && window.AppConfig.CATEGORIES[currentVal]) {
+          recurringCategorySelect.value = currentVal;
+        }
+      }
+
+      const recurringPaymentSelect = document.getElementById('recurring-payment-method');
+      if (recurringPaymentSelect) {
+        const currentVal = recurringPaymentSelect.value;
+        recurringPaymentSelect.innerHTML = Object.values(window.AppConfig.PAYMENT_METHODS)
+          .map((pay) => `<option value="${pay.id}">${pay.label}</option>`)
+          .join('');
+        if (currentVal && window.AppConfig.PAYMENT_METHODS[currentVal]) {
+          recurringPaymentSelect.value = currentVal;
+        }
       }
     }
 
     /**
-     * Modal de Confirmação de Exclusão (com suporte a despesas fixas recorrentes)
+     * Modal de Confirmação de Exclusão Direta
      * @param {Object} bill
-     * @param {Object} context { selectedYear, selectedMonth }
      */
-    openDeleteModal(bill, context = {}) {
+    openDeleteModal(bill) {
       this.currentBillToDelete = bill;
-      this.currentDeleteContext = context;
       const modal = document.getElementById('delete-modal');
       const descEl = document.getElementById('delete-bill-description');
       const amountEl = document.getElementById('delete-bill-amount');
       const modalTitle = document.getElementById('delete-modal-title');
-      const modalBadge = document.getElementById('delete-modal-badge');
-      const fixedOptions = document.getElementById('delete-fixed-options');
-      const standardActions = document.getElementById('delete-standard-actions');
-      const fixedMonthLabel = document.getElementById('delete-fixed-month-label');
 
       if (!modal) return;
 
       if (descEl) descEl.textContent = bill.description;
       if (amountEl) amountEl.textContent = window.AppConfig.utils.formatBRL(bill.amount);
-
-      const isFixed = bill.expenseType === 'fixa' || bill.category === 'fixas';
-      const year = context.selectedYear !== undefined ? Number(context.selectedYear) : new Date().getFullYear();
-      const month = context.selectedMonth !== undefined ? Number(context.selectedMonth) : new Date().getMonth();
-      const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês Atual';
-
-      if (isFixed && fixedOptions && standardActions) {
-        if (modalBadge) modalBadge.classList.remove('hidden');
-        if (modalTitle) modalTitle.textContent = 'Excluir Despesa Fixa?';
-        fixedOptions.classList.remove('hidden');
-        standardActions.classList.add('hidden');
-        if (fixedMonthLabel) {
-          fixedMonthLabel.textContent = `${monthName}/${year}`;
-        }
-      } else {
-        if (modalBadge) modalBadge.classList.add('hidden');
-        if (modalTitle) modalTitle.textContent = 'Excluir Conta?';
-        if (fixedOptions) fixedOptions.classList.add('hidden');
-        if (standardActions) standardActions.classList.remove('hidden');
-      }
+      if (modalTitle) modalTitle.textContent = 'Excluir Conta?';
 
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
@@ -1360,8 +1379,6 @@
       const enriched = window.BillService.enrichBills(bills);
 
       enriched.forEach((b) => {
-        if (b.isPriorToLaunch) return;
-
         // 1. Status Financeiro
         if (b.effectiveStatus === 'pago') {
           paidCount++;
@@ -1446,14 +1463,11 @@
 
     /**
      * Renderiza o Relatório de Despesas Pagas por Mês em view-relatorios
-     * com foco nos pagamentos de cada mês e botões diretos para gerar PDF e Excel
+     * e garante o preenchimento do seletor de mês
      * @param {Array<Object>} monthlyData
      */
     renderMonthlyReport(monthlyData) {
-      const container = document.getElementById('report-monthly-grid');
-      if (!container) return;
-
-      // Popula o select do mês no topo da seção com os 12 meses
+      // 1. Popula o select do mês no topo da seção com os 12 meses
       const monthSelect = document.getElementById('select-report-month');
       if (monthSelect && monthlyData && monthlyData.length > 0) {
         const currentVal = monthSelect.value;
@@ -1475,112 +1489,6 @@
           }
         }
       }
-
-      if (!monthlyData || monthlyData.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full py-8 text-center text-slate-400 text-xs">
-            Nenhum dado mensal disponível para o período.
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = monthlyData
-        .map((m) => {
-          const paidPct = m.total > 0 ? ((m.paid / m.total) * 100).toFixed(0) : 0;
-          return `
-            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group">
-              <div>
-                <!-- Cabeçalho do Card: Mês e Badges de Quitação -->
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-bold text-slate-900 dark:text-slate-100">${m.label}</span>
-                  <div class="flex items-center gap-1">
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      m.paidCount > 0
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                    }">
-                      ${m.paidCount} ${m.paidCount === 1 ? 'paga' : 'pagas'}
-                    </span>
-                    ${
-                      m.pendingCount > 0
-                        ? `<span class="text-[10px] font-semibold px-1 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300">${m.pendingCount} pend.</span>`
-                        : ''
-                    }
-                  </div>
-                </div>
-
-                <!-- DESTAQUE PRINCIPAL: TOTAL PAGO NO MÊS -->
-                <div class="p-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 mb-2.5">
-                  <div class="flex items-center justify-between text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase tracking-wider">
-                    <span>Total Pago no Mês</span>
-                    <span>${paidPct}% quitado</span>
-                  </div>
-                  <div class="text-base sm:text-lg font-black text-emerald-900 dark:text-emerald-100 tabular-nums mt-0.5">
-                    ${window.AppConfig.utils.formatBRL(m.paid)}
-                  </div>
-                </div>
-
-                <!-- Subtotais Informativos: Total do Mês e A Pagar -->
-                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-500 px-0.5">
-                  <div>
-                    <span class="block text-[10px] text-slate-400 font-medium">Total do Mês:</span>
-                    <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">${window.AppConfig.utils.formatBRL(m.total)}</span>
-                  </div>
-                  <div>
-                    <span class="block text-[10px] text-amber-600 font-semibold">A Pagar:</span>
-                    <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">${window.AppConfig.utils.formatBRL(m.pending)}</span>
-                  </div>
-                </div>
-
-                <!-- Barra de Progresso de Quitação -->
-                <div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2.5">
-                  <div class="bg-emerald-500 h-full rounded-full transition-all" style="width: ${paidPct}%"></div>
-                </div>
-              </div>
-
-              <!-- BOTÕES DE AÇÃO: VISUALIZAR, GERAR PDF E GERAR EXCEL DESTE MÊS -->
-              <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
-                <button
-                  type="button"
-                  class="btn-month-card-view flex-1 py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-slate-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-bold flex items-center justify-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
-                  data-year="${m.year}"
-                  data-month="${m.monthIndex}"
-                  data-label="${m.label}"
-                  title="Visualizar todas as despesas de ${m.label} na tabela acima (somente visualização)"
-                >
-                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                  <span>Ver Contas</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-month-card-pdf py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
-                  data-year="${m.year}"
-                  data-month="${m.monthIndex}"
-                  data-label="${m.label}"
-                  title="Gerar e imprimir relatório PDF com as despesas de ${m.label}"
-                >
-                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                  <span>PDF</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-month-card-excel py-1.5 px-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
-                  data-year="${m.year}"
-                  data-month="${m.monthIndex}"
-                  data-label="${m.label}"
-                  title="Baixar planilha Excel (.csv) com as despesas de ${m.label}"
-                >
-                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
-                  <span>Excel</span>
-                </button>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
-
-      if (window.lucide) window.lucide.createIcons();
     }
 
     /**
@@ -1951,6 +1859,885 @@
         modal.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
         document.body.classList.remove('modal-open-statement');
+      }
+    }
+
+    // =========================================================================
+    // MODAIS DE ADMINISTRAÇÃO & GESTÃO
+    // =========================================================================
+
+    /**
+     * Abre o modal de Cadastro e Gestão de Usuários
+     */
+    openUsersModal() {
+      const modal = document.getElementById('users-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        this.resetUserForm();
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    closeUsersModal() {
+      const modal = document.getElementById('users-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    resetUserForm() {
+      const form = document.getElementById('user-form');
+      if (form) form.reset();
+      const idInput = document.getElementById('user-id');
+      if (idInput) idInput.value = '';
+      const title = document.getElementById('user-form-title');
+      if (title) {
+        title.innerHTML = `<i data-lucide="user-plus" class="w-3.5 h-3.5"></i><span>Cadastrar Novo Usuário</span>`;
+      }
+      const submitText = document.getElementById('btn-submit-user-text');
+      if (submitText) submitText.textContent = 'Salvar Usuário';
+      const resetBtn = document.getElementById('btn-reset-user-form');
+      if (resetBtn) resetBtn.classList.add('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    fillUserForm(user) {
+      if (!user) return;
+      document.getElementById('user-id').value = user.id || '';
+      document.getElementById('user-name').value = user.name || '';
+      document.getElementById('user-email').value = user.email || '';
+      document.getElementById('user-role').value = user.role || 'financeiro';
+      document.getElementById('user-location').value = user.location || 'LD';
+      document.getElementById('user-status').value = user.status || 'ativo';
+
+      const title = document.getElementById('user-form-title');
+      if (title) {
+        title.innerHTML = `<i data-lucide="user-cog" class="w-3.5 h-3.5 text-amber-600"></i><span>Editar Usuário: ${user.name}</span>`;
+      }
+      const submitText = document.getElementById('btn-submit-user-text');
+      if (submitText) submitText.textContent = 'Salvar Alterações';
+      const resetBtn = document.getElementById('btn-reset-user-form');
+      if (resetBtn) resetBtn.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+      document.getElementById('user-name').focus();
+    }
+
+    /**
+     * Tela / Modal Dedicado de Edição de Informações do Usuário
+     * @param {Object} user
+     */
+    openEditUserModal(user) {
+      if (!user) return;
+      const modal = document.getElementById('edit-user-modal');
+      if (!modal) return;
+
+      const idInput = document.getElementById('modal-edit-user-id');
+      const nameInput = document.getElementById('modal-edit-user-name');
+      const emailInput = document.getElementById('modal-edit-user-email');
+      const roleSelect = document.getElementById('modal-edit-user-role');
+      const locationSelect = document.getElementById('modal-edit-user-location');
+      const statusSelect = document.getElementById('modal-edit-user-status');
+
+      if (idInput) idInput.value = user.id || '';
+      if (nameInput) nameInput.value = user.name || '';
+      if (emailInput) emailInput.value = user.email || '';
+      if (roleSelect) roleSelect.value = user.role || 'financeiro';
+      if (locationSelect) locationSelect.value = user.location || 'LD';
+      if (statusSelect) statusSelect.value = user.status || 'ativo';
+
+      // Atualiza Avatar com Iniciais
+      const initials = user.name
+        ? user.name.split(' ').filter(Boolean).map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+        : 'U';
+      const avatarEl = document.getElementById('modal-edit-user-avatar');
+      if (avatarEl) avatarEl.textContent = initials || 'U';
+
+      // Atualiza Badge do Perfil
+      const roleMeta = (window.AppConfig.USER_ROLES && window.AppConfig.USER_ROLES[user.role]) || { label: user.role };
+      const roleBadge = document.getElementById('modal-edit-user-badge-role');
+      if (roleBadge) {
+        roleBadge.textContent = roleMeta.label;
+      }
+
+      // Atualiza Título e Subtítulo
+      const titleEl = document.getElementById('edit-user-modal-title');
+      if (titleEl) {
+        titleEl.textContent = `Editar: ${user.name}`;
+      }
+      const subtitleEl = document.getElementById('edit-user-modal-subtitle');
+      if (subtitleEl) {
+        subtitleEl.textContent = `Atualize os dados, função institucional e permissões de ${user.name}`;
+      }
+
+      // Atualiza ID e data de cadastro
+      const idDisplay = document.getElementById('modal-edit-user-id-display');
+      if (idDisplay) idDisplay.textContent = user.id || 'N/A';
+
+      const createdEl = document.getElementById('modal-edit-user-created-at');
+      if (createdEl) {
+        if (user.createdAt) {
+          try {
+            const d = new Date(user.createdAt);
+            createdEl.textContent = `Cadastrado em: ${window.AppConfig.utils.formatDate(window.AppConfig.utils.toISODateString(d))}`;
+          } catch (e) {
+            createdEl.textContent = 'Usuário registrado';
+          }
+        } else {
+          createdEl.textContent = 'Usuário Padrão do Sistema';
+        }
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+
+      setTimeout(() => {
+        if (nameInput) {
+          nameInput.focus();
+          nameInput.select();
+        }
+      }, 50);
+    }
+
+    closeEditUserModal() {
+      const modal = document.getElementById('edit-user-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    renderUsersList(users = []) {
+      const tbody = document.getElementById('users-table-body');
+      const badge = document.getElementById('users-total-count-badge');
+      const sidebarBadge = document.getElementById('sidebar-count-users');
+
+      const activeCount = users.filter((u) => u.status === 'ativo').length;
+      if (badge) badge.textContent = `${activeCount} ativos (${users.length} total)`;
+      if (sidebarBadge) sidebarBadge.textContent = users.length;
+
+      if (!tbody) return;
+
+      if (users.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-6 text-center text-slate-400">
+              Nenhum usuário cadastrado.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = users.map((user) => {
+        const roleMeta = (window.AppConfig.USER_ROLES && window.AppConfig.USER_ROLES[user.role]) || {
+          label: user.role,
+          badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+          icon: 'user'
+        };
+        const isAtivo = user.status === 'ativo';
+        const initials = user.name ? user.name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors" data-user-id="${user.id}">
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-[10px] shrink-0 border border-emerald-200">
+                  ${initials}
+                </div>
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-900 dark:text-white leading-tight">${user.name}</div>
+                  <div class="text-[10px] text-slate-400">${user.email}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${roleMeta.badgeClass}">
+                <i data-lucide="${roleMeta.icon}" class="w-3 h-3"></i>
+                <span>${roleMeta.label}</span>
+              </span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-center">
+              <span class="font-bold text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                ${user.location || 'LD'}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-center">
+              <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                isAtivo
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              }">
+                ${isAtivo ? 'Ativo' : 'Inativo'}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  class="btn-edit-user p-1.5 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/60 text-slate-500 hover:text-emerald-700 transition-all cursor-pointer active:scale-95"
+                  data-user-id="${user.id}"
+                  title="Editar Informações do Usuário"
+                >
+                  <i data-lucide="edit-3" class="w-4 h-4 text-emerald-700 dark:text-emerald-400"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn-delete-user p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 transition-all cursor-pointer active:scale-95"
+                  data-user-id="${user.id}"
+                  data-user-name="${user.name}"
+                  title="Excluir Usuário"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    /**
+     * Modal de Cadastro de Feriados
+     */
+    openHolidaysModal(selectedYear = '2026') {
+      const modal = document.getElementById('holidays-modal');
+      const yearSelect = document.getElementById('holiday-filter-year');
+      if (yearSelect && selectedYear) {
+        yearSelect.value = String(selectedYear);
+      }
+      const simInput = document.getElementById('sim-date-input');
+      if (simInput && !simInput.value) {
+        simInput.value = window.AppConfig.utils.toISODateString(new Date());
+      }
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    closeHolidaysModal() {
+      const modal = document.getElementById('holidays-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    switchHolidaysTab(tab = 'calendar') {
+      const btnCalendar = document.getElementById('tab-btn-holidays-calendar');
+      const btnParams = document.getElementById('tab-btn-holidays-params');
+      const contentCalendar = document.getElementById('tab-content-holidays-calendar');
+      const contentParams = document.getElementById('tab-content-holidays-params');
+
+      if (tab === 'calendar') {
+        btnCalendar?.classList.add('border-amber-600', 'text-amber-900', 'dark:text-amber-300', 'bg-amber-50/60', 'dark:bg-amber-950/30');
+        btnCalendar?.classList.remove('border-transparent', 'text-slate-600');
+        btnParams?.classList.remove('border-amber-600', 'text-amber-900', 'dark:text-amber-300', 'bg-amber-50/60', 'dark:bg-amber-950/30');
+        btnParams?.classList.add('border-transparent', 'text-slate-600');
+
+        contentCalendar?.classList.remove('hidden');
+        contentParams?.classList.add('hidden');
+      } else {
+        btnParams?.classList.add('border-amber-600', 'text-amber-900', 'dark:text-amber-300', 'bg-amber-50/60', 'dark:bg-amber-950/30');
+        btnParams?.classList.remove('border-transparent', 'text-slate-600');
+        btnCalendar?.classList.remove('border-amber-600', 'text-amber-900', 'dark:text-amber-300', 'bg-amber-50/60', 'dark:bg-amber-950/30');
+        btnCalendar?.classList.add('border-transparent', 'text-slate-600');
+
+        contentCalendar?.classList.add('hidden');
+        contentParams?.classList.remove('hidden');
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    renderHolidayParams(params) {
+      if (!params) return;
+      const daysSelect = document.getElementById('param-alert-business-days');
+      if (daysSelect && params.alertAdvanceBusinessDays !== undefined) {
+        daysSelect.value = String(params.alertAdvanceBusinessDays);
+      }
+
+      const autoProrogateCheck = document.getElementById('param-auto-prorogate');
+      if (autoProrogateCheck) {
+        autoProrogateCheck.checked = params.autoProrogateNonBusinessDays !== false;
+      }
+
+      const autoPopupCheck = document.getElementById('param-auto-popup');
+      if (autoPopupCheck) {
+        autoPopupCheck.checked = params.autoShowDailyPopup !== false;
+      }
+
+      const checkboxes = document.querySelectorAll('input[name="param-hol-type"]');
+      const activeTypes = Array.isArray(params.consideredTypes)
+        ? params.consideredTypes
+        : ['municipal_sjc', 'estadual_sp', 'nacional', 'bancario_cartorio', 'facultativo'];
+
+      checkboxes.forEach((cb) => {
+        cb.checked = activeTypes.includes(cb.value);
+      });
+    }
+
+    renderHolidaySimulation(result) {
+      const box = document.getElementById('sim-result-box');
+      if (!box) return;
+
+      if (!result) {
+        box.innerHTML = `<p class="text-slate-400 text-[11px]">Selecione uma data acima e clique em "Testar Cálculo".</p>`;
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-amber-100 dark:border-amber-900/40">
+            <span class="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+              <i data-lucide="${result.isBusinessDay ? 'check-circle' : 'alert-circle'}" class="w-4 h-4 ${result.isBusinessDay ? 'text-emerald-600' : 'text-amber-600'}"></i>
+              <span>Diagnóstico da Data: <strong>${result.nominalFormatted} (${result.nominalDayName})</strong></span>
+            </span>
+            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${
+              result.isBusinessDay
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+            }">
+              ${result.isBusinessDay ? 'Dia Útil' : result.holiday ? 'Feriado Cartorário' : 'Final de Semana'}
+            </span>
+          </div>
+
+          ${
+            result.holiday
+              ? `<div class="text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                   <i data-lucide="tag" class="w-3.5 h-3.5 shrink-0"></i>
+                   <span>Feriado Detectado: <strong>${result.holiday.name}</strong> (${result.holidayTypeName})</span>
+                 </div>`
+              : ''
+          }
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
+            <div class="p-2 rounded bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60">
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">Vencimento Efetivo Legal</span>
+              <span class="font-bold text-slate-900 dark:text-white text-xs">${result.effectiveFormatted} (${result.effectiveDayName})</span>
+              ${result.isProrogated ? `<span class="text-[10px] text-amber-700 dark:text-amber-400 block font-medium">↳ Prorrogado automaticamente</span>` : `<span class="text-[10px] text-emerald-600 block font-medium">↳ Sem necessidade de prorrogação</span>`}
+            </div>
+
+            <div class="p-2 rounded bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60">
+              <span class="text-slate-500 block text-[10px] uppercase font-bold">Início do Aviso Prévio (${result.advanceDays} dias úteis antes)</span>
+              <span class="font-bold text-slate-900 dark:text-white text-xs">${result.alertStartFormatted} (${result.alertStartDayName})</span>
+              <span class="text-[10px] ${result.isAlertActiveToday ? 'text-rose-600 font-extrabold animate-pulse' : 'text-slate-500'} block">
+                ${result.isAlertActiveToday ? '🚨 Aviso disparado para HOJE!' : result.alertStatusText}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    renderHolidaysList(holidays = [], selectedYear = '2026') {
+      const tbody = document.getElementById('holidays-table-body');
+      const countBadge = document.getElementById('holidays-count-badge');
+      const sidebarBadge = document.getElementById('sidebar-count-holidays');
+
+      if (countBadge) countBadge.textContent = `${holidays.length} feriados (${selectedYear === 'todos' ? 'todos' : selectedYear})`;
+      if (sidebarBadge) sidebarBadge.textContent = holidays.length;
+
+      if (!tbody) return;
+
+      if (holidays.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-6 text-center text-slate-400">
+              Nenhum feriado cadastrado para o ano ${selectedYear}.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const todayISO = window.AppConfig.utils.toISODateString(new Date());
+
+      tbody.innerHTML = holidays.map((h) => {
+        const typeMeta = (window.AppConfig.HOLIDAY_TYPES && window.AppConfig.HOLIDAY_TYPES[h.type]) || {
+          label: h.type || 'Feriado',
+          shortLabel: h.type,
+          badgeClass: 'bg-slate-100 text-slate-700 border-slate-300'
+        };
+        const dateFormatted = window.AppConfig.utils.formatDate(h.date);
+        const dayOfWeek = window.AppConfig.utils.getDayOfWeekName(h.date);
+        const isToday = h.date === todayISO;
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${isToday ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}" data-holiday-id="${h.id}">
+            <td class="py-2.5 px-3 whitespace-nowrap font-bold text-slate-900 dark:text-white">
+              <div class="flex items-center gap-1.5">
+                <span>${dateFormatted}</span>
+                ${isToday ? '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">Hoje</span>' : ''}
+              </div>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
+              ${dayOfWeek}
+            </td>
+            <td class="py-2.5 px-3 font-semibold text-slate-800 dark:text-slate-200">
+              ${h.name}
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-center">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${typeMeta.badgeClass}">
+                ${typeMeta.label}
+              </span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap text-right">
+              <button
+                type="button"
+                class="btn-delete-holiday p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 transition-colors"
+                data-holiday-id="${h.id}"
+                data-holiday-name="${h.name}"
+                title="Excluir Feriado"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    /**
+     * Modal do Gerenciador de Despesas Fixas (Apenas Despesas Fixas)
+     */
+    openExpenseManagerModal() {
+      const modal = document.getElementById('expense-manager-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    closeExpenseManagerModal() {
+      const modal = document.getElementById('expense-manager-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    /**
+     * Modal de Gerenciamento de Categorias de Despesas (Lista e Edição)
+     */
+    openCategoriesModal() {
+      const modal = document.getElementById('categories-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+
+    closeCategoriesModal() {
+      const modal = document.getElementById('categories-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }
+
+    switchExpenseManagerTab(tabName = 'fixed') {
+      const tabBtns = document.querySelectorAll('.tab-exp-btn');
+      tabBtns.forEach((btn) => {
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('border-emerald-600', 'text-emerald-800', 'dark:text-emerald-300', 'bg-emerald-50/50', 'dark:bg-emerald-950/30', 'font-bold');
+          btn.classList.remove('border-transparent', 'text-slate-600', 'dark:text-slate-400', 'font-semibold');
+        } else {
+          btn.classList.remove('border-emerald-600', 'text-emerald-800', 'dark:text-emerald-300', 'bg-emerald-50/50', 'dark:bg-emerald-950/30', 'font-bold');
+          btn.classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400', 'font-semibold');
+        }
+      });
+
+      const secCategories = document.getElementById('tab-content-exp-categories');
+      const secFixed = document.getElementById('tab-content-exp-fixed');
+      const secBudget = document.getElementById('tab-content-exp-budget');
+
+      if (secCategories) secCategories.classList.toggle('hidden', tabName !== 'categories');
+      if (secFixed) secFixed.classList.toggle('hidden', tabName !== 'fixed');
+      if (secBudget) secBudget.classList.toggle('hidden', tabName !== 'budget');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    renderExpenseCategories(categoriesObj, bills = []) {
+      const container = document.getElementById('categories-table-body') || document.getElementById('categories-grid');
+      const countBadge = document.getElementById('categories-count-badge');
+      const sidebarBadge = document.getElementById('sidebar-count-categories');
+      if (!container) return;
+
+      const cats = Object.values(categoriesObj || {});
+      const format = window.AppConfig.utils.formatBRL;
+      const defaultIds = ['moradia', 'alimentacao', 'fixas', 'variaveis', 'negocios', 'lazer', 'transporte', 'saude', 'educacao', 'outros'];
+
+      if (countBadge) countBadge.textContent = `${cats.length} categorias`;
+      if (sidebarBadge) sidebarBadge.textContent = cats.length;
+
+      if (cats.length === 0) {
+        container.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-400">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <i data-lucide="tag" class="w-6 h-6 text-slate-300"></i>
+                <p class="text-xs">Nenhuma categoria de despesa cadastrada.</p>
+                <button type="button" class="btn-focus-new-cat text-xs font-bold text-emerald-600 hover:underline cursor-pointer">
+                  Clique aqui para adicionar uma nova categoria
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = cats.map((cat) => {
+        const catBills = bills.filter((b) => b.category === cat.id);
+        const total = catBills.reduce((s, b) => s + (Number(b.amount) || 0), 0);
+        const isProtected = cat.id === 'outros';
+        const isDefault = defaultIds.includes(cat.id);
+
+        return `
+          <tr class="hover:bg-emerald-50/50 dark:hover:bg-slate-800/40 transition-colors group" data-cat-id="${cat.id}">
+            <!-- Categoria & Ícone -->
+            <td class="py-2.5 px-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white font-bold shadow-2xs transition-transform group-hover:scale-105" style="background-color: ${cat.color || '#059669'};">
+                  <i data-lucide="${cat.icon || 'tag'}" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                    <span>${cat.label}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono">
+                    ID: ${cat.id}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Cor de Destaque -->
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono font-semibold shadow-2xs">
+                <span class="w-3.5 h-3.5 rounded-full shrink-0 shadow-2xs border border-black/10" style="background-color: ${cat.color || '#059669'};"></span>
+                <span class="text-slate-700 dark:text-slate-300">${cat.color || '#059669'}</span>
+              </div>
+            </td>
+
+            <!-- Contas em Uso -->
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                catBills.length > 0
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              }">
+                ${catBills.length} ${catBills.length === 1 ? 'conta' : 'contas'}
+              </span>
+            </td>
+
+            <!-- Total Acumulado -->
+            <td class="py-2.5 px-3 text-right font-bold tabular-nums text-slate-900 dark:text-white whitespace-nowrap text-xs">
+              ${format(total)}
+            </td>
+
+            <!-- Classificação -->
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${
+                isDefault
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+              }">
+                ${isDefault ? 'Padrão' : 'Personalizada'}
+              </span>
+            </td>
+
+            <!-- Ações: Editar e Excluir -->
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1.5">
+                <!-- Botão Editar Categoria -->
+                <button
+                  type="button"
+                  class="btn-edit-category px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer active:scale-95 flex items-center gap-1 shadow-2xs"
+                  data-cat-id="${cat.id}"
+                  data-cat-label="${cat.label}"
+                  data-cat-icon="${cat.icon || 'tag'}"
+                  data-cat-color="${cat.color || '#059669'}"
+                  title="Editar esta categoria (nome, cor ou ícone)"
+                >
+                  <i data-lucide="edit-2" class="w-3 h-3"></i>
+                  <span>Editar</span>
+                </button>
+
+                <!-- Botão Excluir Categoria -->
+                ${
+                  !isProtected
+                    ? `<button
+                        type="button"
+                        class="btn-delete-category p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                        data-cat-id="${cat.id}"
+                        data-cat-label="${cat.label}"
+                        data-bills-count="${catBills.length}"
+                        title="Excluir categoria"
+                      >
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>`
+                    : `<span class="text-[9px] px-1.5 py-0.5 rounded text-slate-400 font-bold" title="Categoria padrão do sistema obrigatória">-</span>`
+                }
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    fillCategoryForm(cat) {
+      const idInput = document.getElementById('cat-id');
+      const nameInput = document.getElementById('cat-name');
+      const iconInput = document.getElementById('cat-icon');
+      const colorInput = document.getElementById('cat-color');
+      const colorHex = document.getElementById('cat-color-hex');
+      const titleText = document.getElementById('category-form-title-text');
+      const submitText = document.getElementById('btn-submit-category-text');
+      const cancelBtn = document.getElementById('btn-cancel-cat-form');
+
+      if (idInput) idInput.value = cat.id || '';
+      if (nameInput) nameInput.value = cat.label || '';
+      if (iconInput) iconInput.value = cat.icon || 'tag';
+      if (colorInput) colorInput.value = cat.color || '#059669';
+      if (colorHex) colorHex.textContent = cat.color || '#059669';
+
+      if (titleText) titleText.textContent = `Editar Categoria: ${cat.label}`;
+      if (submitText) submitText.textContent = 'Salvar Alterações';
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+      const formEl = document.getElementById('category-form');
+      if (formEl) {
+        formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+      }
+    }
+
+    resetCategoryForm() {
+      const form = document.getElementById('category-form');
+      if (form) form.reset();
+      const idInput = document.getElementById('cat-id');
+      if (idInput) idInput.value = '';
+      const colorInput = document.getElementById('cat-color');
+      const colorHex = document.getElementById('cat-color-hex');
+      if (colorInput) colorInput.value = '#059669';
+      if (colorHex) colorHex.textContent = '#059669';
+
+      const titleText = document.getElementById('category-form-title-text');
+      const submitText = document.getElementById('btn-submit-category-text');
+      const cancelBtn = document.getElementById('btn-cancel-cat-form');
+
+      if (titleText) titleText.textContent = 'Adicionar Nova Categoria de Despesa';
+      if (submitText) submitText.textContent = 'Salvar Categoria';
+      if (cancelBtn) cancelBtn.classList.add('hidden');
+    }
+
+    renderExpenseFixedBills(recurringBills = []) {
+      const tbody = document.getElementById('fixed-bills-table-body');
+      const totalMonthlyEl = document.getElementById('fixed-exp-total-monthly');
+      const totalCountEl = document.getElementById('fixed-exp-total-count');
+
+      const format = window.AppConfig.utils.formatBRL;
+      const totalFixedMonthly = recurringBills.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+
+      if (totalMonthlyEl) totalMonthlyEl.textContent = format(totalFixedMonthly);
+      if (totalCountEl) totalCountEl.textContent = `${recurringBills.length} ${recurringBills.length === 1 ? 'conta fixa' : 'contas fixas'}`;
+
+      if (!tbody) return;
+
+      if (recurringBills.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-400">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <i data-lucide="pin-off" class="w-6 h-6 text-slate-300"></i>
+                <p class="text-xs">Nenhuma despesa fixa cadastrada no repositório.</p>
+                <button type="button" class="btn-trigger-new-recurring text-xs font-bold text-emerald-600 hover:underline cursor-pointer">
+                  Clique aqui para cadastrar uma despesa fixa
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      tbody.innerHTML = recurringBills.map((b) => {
+        const catMeta = window.AppConfig.CATEGORIES[b.category] || window.AppConfig.CATEGORIES.outros;
+        const dueDay = b.dueDay || (b.dueDate ? parseInt(b.dueDate.split('-')[2], 10) : 1);
+        const loc = b.location === 'CG' ? 'LD' : (b.location || 'LD');
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors" data-recurring-id="${b.id}">
+            <td class="py-2.5 px-3">
+              <div class="font-bold text-slate-900 dark:text-white text-xs">${b.description}</div>
+              ${b.notes ? `<div class="text-[10px] text-slate-400 truncate max-w-xs mt-0.5">${b.notes}</div>` : ''}
+            </td>
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${
+                loc === 'REC' ? 'bg-sky-100 text-sky-800' : loc === 'SE' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+              }">${loc}</span>
+            </td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                <i data-lucide="${catMeta.icon || 'tag'}" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>${catMeta.label}</span>
+              </span>
+            </td>
+            <td class="py-2.5 px-3 text-center font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap text-xs">
+              Todo dia ${dueDay}
+            </td>
+            <td class="py-2.5 px-3 text-right font-bold tabular-nums text-slate-900 dark:text-white whitespace-nowrap text-xs">
+              ${format(b.amount)}
+            </td>
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  class="btn-edit-recurring-bill px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
+                  data-recurring-id="${b.id}"
+                  title="Editar despesa recorrente"
+                >
+                  <i data-lucide="edit-2" class="w-3 h-3"></i>
+                  <span>Editar</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-launch-single-recurring px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 text-[11px] font-bold border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
+                  data-recurring-id="${b.id}"
+                  title="Lançar esta despesa no mês selecionado das despesas"
+                >
+                  <i data-lucide="calendar-plus" class="w-3 h-3"></i>
+                  <span>Lançar no Mês</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-delete-recurring-bill p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  data-recurring-id="${b.id}"
+                  data-recurring-name="${b.description}"
+                  title="Excluir do Repositório"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    openRecurringForm(recurring = null) {
+      this.populateSelectOptions();
+      const card = document.getElementById('recurring-form-card');
+      const title = document.getElementById('recurring-form-title');
+      const submitText = document.getElementById('btn-save-recurring-text');
+
+      if (!card) return;
+
+      if (recurring) {
+        if (title) title.innerHTML = '<i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i><span>Editar Despesa Fixa no Repositório</span>';
+        if (submitText) submitText.textContent = 'Salvar Alterações';
+        this.fillRecurringForm(recurring);
+      } else {
+        if (title) title.innerHTML = '<i data-lucide="pin" class="w-3.5 h-3.5 text-emerald-600"></i><span>Adicionar Nova Despesa Fixa no Repositório</span>';
+        if (submitText) submitText.textContent = 'Salvar Despesa Fixa';
+        this.resetRecurringForm();
+      }
+
+      card.classList.remove('hidden');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById('recurring-description')?.focus();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    closeRecurringForm() {
+      const card = document.getElementById('recurring-form-card');
+      if (card) {
+        card.classList.add('hidden');
+      }
+      this.resetRecurringForm();
+    }
+
+    fillRecurringForm(rec) {
+      document.getElementById('recurring-bill-id').value = rec.id || '';
+      document.getElementById('recurring-description').value = rec.description || '';
+      document.getElementById('recurring-amount').value = rec.amount || '';
+      document.getElementById('recurring-due-day').value = rec.dueDay || 1;
+      document.getElementById('recurring-location').value = rec.location || 'LD';
+      document.getElementById('recurring-category').value = rec.category || 'outros';
+      document.getElementById('recurring-payment-method').value = rec.paymentMethod || 'pix';
+      document.getElementById('recurring-notes').value = rec.notes || '';
+    }
+
+    resetRecurringForm() {
+      const form = document.getElementById('recurring-bill-form');
+      if (form) form.reset();
+      const idInput = document.getElementById('recurring-bill-id');
+      if (idInput) idInput.value = '';
+    }
+
+    renderExpenseBudget(budgetSettings, currentMonthTotal = 0) {
+      const budgetAmountInput = document.getElementById('budget-monthly-amount');
+      const alertThresholdInput = document.getElementById('budget-alert-threshold');
+      const spentEl = document.getElementById('budget-preview-spent');
+      const progressEl = document.getElementById('budget-preview-progress');
+      const statusEl = document.getElementById('budget-preview-status');
+      const remainingEl = document.getElementById('budget-preview-remaining');
+
+      const budget = Number(budgetSettings?.monthlyBudget) || 8000;
+      const threshold = Number(budgetSettings?.alertThreshold) || 80;
+
+      if (budgetAmountInput) budgetAmountInput.value = budget;
+      if (alertThresholdInput) alertThresholdInput.value = threshold;
+
+      const format = window.AppConfig.utils.formatBRL;
+      const pct = budget > 0 ? Math.min(100, Math.round((currentMonthTotal / budget) * 100)) : 0;
+      const remaining = Math.max(0, budget - currentMonthTotal);
+
+      if (spentEl) spentEl.textContent = `${format(currentMonthTotal)} de ${format(budget)}`;
+      if (progressEl) {
+        progressEl.style.width = `${pct}%`;
+        if (pct >= 100) {
+          progressEl.className = 'bg-rose-600 h-full rounded-full transition-all duration-500';
+        } else if (pct >= threshold) {
+          progressEl.className = 'bg-amber-500 h-full rounded-full transition-all duration-500';
+        } else {
+          progressEl.className = 'bg-emerald-600 h-full rounded-full transition-all duration-500';
+        }
+      }
+      if (statusEl) statusEl.textContent = `${pct}% do teto utilizado`;
+      if (remainingEl) {
+        if (currentMonthTotal > budget) {
+          remainingEl.className = 'font-bold text-rose-600';
+          remainingEl.textContent = `Teto Excedido em ${format(currentMonthTotal - budget)}`;
+        } else {
+          remainingEl.className = 'font-semibold text-emerald-700 dark:text-emerald-400';
+          remainingEl.textContent = `Saldo Disponível: ${format(remaining)}`;
+        }
       }
     }
   }

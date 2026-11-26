@@ -18,7 +18,8 @@
     }
 
     /**
-     * Calcula o status efetivo da conta com base na data de vencimento e pagamento
+     * Calcula o status efetivo da conta com base na data de vencimento efetivo e pagamento
+     * Considera feriados e fins de semana para não marcar como atrasadas contas cujo vencimento prorrogou
      * @param {Object} bill
      * @returns {'pago' | 'atrasado' | 'pendente'}
      */
@@ -32,11 +33,10 @@
       }
 
       const today = this.getTodayNormalized();
-      const parts = bill.dueDate.split('-');
-      const due = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      due.setHours(0, 0, 0, 0);
+      const effectiveDue = window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
+      effectiveDue.setHours(0, 0, 0, 0);
 
-      if (due.getTime() < today.getTime()) {
+      if (effectiveDue.getTime() < today.getTime()) {
         return 'atrasado';
       }
 
@@ -44,107 +44,37 @@
     }
 
     /**
-     * Enriquece uma lista de contas com status computado, projeção mensal e metadados visuais
+     * Enriquece uma lista de contas com status computado e metadados visuais
+     * Sem replicação ou projeção para meses seguintes: cada conta pertence estritamente ao seu próprio vencimento
      * @param {Array<Object>} bills
      * @param {Object} context { targetYear, targetMonth }
      * @returns {Array<Object>}
      */
     enrichBills(bills, context = {}) {
-      const today = this.getTodayNormalized();
-      const todayISO = window.AppConfig.utils.toISODateString(today);
-
-      const targetYear = context.targetYear !== undefined && context.targetYear !== null
-        ? Number(context.targetYear)
-        : today.getFullYear();
-      const targetMonth = context.targetMonth !== undefined && context.targetMonth !== null
-        ? Number(context.targetMonth)
-        : today.getMonth();
-
-      const pad = (n) => String(n).padStart(2, '0');
-      const targetMonthKey = `${targetYear}-${pad(targetMonth + 1)}`;
-
       return bills.map((b) => {
         const expenseType = b.expenseType || (b.category === 'fixas' ? 'fixa' : 'variavel');
-        const isFixed = expenseType === 'fixa';
+        const dueDate = b.dueDate || '';
+        const amount = Number(b.amount) || 0;
+        const description = b.description || '';
+        const status = b.status || 'pendente';
+        const paymentDate = b.paymentDate || null;
+        const invoiceNumber = b.invoiceNumber || '';
+        const documentNumber = b.documentNumber || '';
+        const locationVal = b.location === 'CG' ? 'LD' : (b.location || 'LD');
+        const category = b.category || 'outros';
+        const paymentMethod = b.paymentMethod || 'pix';
+        const notes = b.notes || '';
 
-        // Busca dados específicos gravados para o mês selecionado (isolamento por mês)
-        const monthOverride = (b.monthlyOverrides && b.monthlyOverrides[targetMonthKey]) ||
-                              (b.monthlyStatus && b.monthlyStatus[targetMonthKey]) ||
-                              null;
-
-        let dueDate = b.dueDate;
-        let amount = Number(b.amount) || 0;
-        let description = b.description || '';
-        let status = b.status || 'pendente';
-        let paymentDate = b.paymentDate || null;
-        let invoiceNumber = b.invoiceNumber || '';
-        let documentNumber = b.documentNumber || '';
-        let location = b.location === 'CG' ? 'LD' : (b.location || 'LD');
-        let category = b.category || 'outros';
-        let paymentMethod = b.paymentMethod || 'pix';
-        let notes = b.notes || '';
-
-        // Origem do lançamento para determinar o mês de partida da despesa fixa
-        const origDueDate = b.launchDueDate || b.dueDate;
-        const startMonthKey = b.startMonthKey || (origDueDate && origDueDate.includes('-') ? origDueDate.substring(0, 7) : targetMonthKey);
-
-        // Se a despesa for fixa e o mês visualizado for ANTERIOR ao mês de lançamento da despesa
-        const isPriorToLaunch = isFixed && Boolean(startMonthKey) && (targetMonthKey < startMonthKey);
-
-        // Se a despesa fixa foi excluída/encerrada a partir de determinado mês (daquele mês para frente)
-        // NÃO incluir no mês informado nem em meses futuros. Preserva meses anteriores intactos.
-        const isExcludedFromMonth = isFixed && Boolean(
-          (b.excludeFromMonthKey && targetMonthKey >= b.excludeFromMonthKey) ||
-          (b.endMonthKey && targetMonthKey > b.endMonthKey) ||
-          (Array.isArray(b.excludedMonths) && b.excludedMonths.includes(targetMonthKey))
-        );
-
-        // =========================================================================
-        // REGRA DE NEGÓCIO DE DESPESAS FIXAS:
-        // Todas as despesas fixas constam em todos os meses seguintes ao lançamento dela.
-        // NÃO incluir em meses anteriores.
-        // NÃO incluir daquele mês para frente se foi excluída/encerrada em determinado mês.
-        // ISOLAMENTO TOTAL: Alterações feitas em um mês pertencem exclusivamente àquele mês
-        // e não alteram as informações dos meses anteriores e nem dos meses seguintes.
-        // =========================================================================
-        if (isFixed && b.dueDate) {
-          if (!isPriorToLaunch && !isExcludedFromMonth) {
-            const stipulatedDay = Number(monthOverride?.dueDay) || Number(b.dueDay) || parseInt(b.dueDate.split('-')[2], 10) || 1;
-            const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-            const effectiveDay = Math.min(stipulatedDay, daysInMonth);
-            dueDate = `${targetYear}-${pad(targetMonth + 1)}-${pad(effectiveDay)}`;
-
-            if (monthOverride) {
-              // Aplica os valores isolados deste mês específico
-              if (monthOverride.amount !== undefined) amount = Number(monthOverride.amount);
-              if (monthOverride.description !== undefined) description = monthOverride.description;
-              if (monthOverride.status !== undefined) status = monthOverride.status;
-              if (monthOverride.paymentDate !== undefined) paymentDate = monthOverride.paymentDate;
-              if (monthOverride.invoiceNumber !== undefined) invoiceNumber = monthOverride.invoiceNumber;
-              if (monthOverride.documentNumber !== undefined) documentNumber = monthOverride.documentNumber;
-              if (monthOverride.location !== undefined) location = monthOverride.location === 'CG' ? 'LD' : monthOverride.location;
-              if (monthOverride.category !== undefined) category = monthOverride.category;
-              if (monthOverride.paymentMethod !== undefined) paymentMethod = monthOverride.paymentMethod;
-              if (monthOverride.notes !== undefined) notes = monthOverride.notes;
-              if (monthOverride.dueDate) dueDate = monthOverride.dueDate;
-            } else if (origDueDate && origDueDate.startsWith(targetMonthKey)) {
-              // Mês original em que a despesa foi cadastrada (se não houver override)
-              status = b.status || 'pendente';
-              paymentDate = b.paymentDate || null;
-            } else {
-              // Em qualquer mês subsequente sem alteração: status padrão "aguardando pagamento" e data pendente
-              status = 'pendente';
-              paymentDate = null;
-            }
-          }
-        }
+        const effectiveDueDate = window.AppConfig.utils.getEffectiveBusinessDueDate(dueDate);
+        const effectiveISO = window.AppConfig.utils.toISODateString(effectiveDueDate);
+        const isProrogated = Boolean(dueDate && effectiveISO !== dueDate);
+        const holidayMatch = dueDate ? window.AppConfig.utils.isHoliday(dueDate) : null;
 
         const effectiveStatus = this.computeStatus({ dueDate, status, paymentDate });
         const relativeDate = window.AppConfig.utils.getRelativeDateInfo(dueDate, effectiveStatus);
         const categoryMeta = window.AppConfig.CATEGORIES[category] || window.AppConfig.CATEGORIES.outros;
         const paymentMeta = window.AppConfig.PAYMENT_METHODS[paymentMethod] || window.AppConfig.PAYMENT_METHODS.pix;
         const statusMeta = window.AppConfig.STATUSES[effectiveStatus] || window.AppConfig.STATUSES.pendente;
-        const locationVal = location === 'CG' ? 'LD' : location;
         const invoiceStatus = (invoiceNumber || documentNumber) ? 'recebida' : (b.invoiceStatus || 'aguardando');
         const invoiceMeta = (window.AppConfig.INVOICE_STATUSES && window.AppConfig.INVOICE_STATUSES[invoiceStatus]) || { id: 'aguardando', label: 'Aguardando' };
         const expenseTypeMeta = (window.AppConfig.EXPENSE_TYPES && window.AppConfig.EXPENSE_TYPES[expenseType]) || {
@@ -163,6 +93,10 @@
           amount,
           description,
           dueDate,
+          effectiveDueDate,
+          effectiveISO,
+          isProrogated,
+          holidayMatch,
           status,
           paymentDate,
           invoiceNumber,
@@ -179,11 +113,7 @@
           paymentMeta,
           statusMeta,
           invoiceStatus,
-          invoiceMeta,
-          monthKey: targetMonthKey,
-          startMonthKey,
-          isPriorToLaunch,
-          isExcludedFromMonth
+          invoiceMeta
         };
       });
     }
@@ -269,24 +199,9 @@
       const invoiceFilter = filters.invoiceStatus || 'todos';
 
       return enriched.filter((bill) => {
-        // Regra de despesa fixa: NÃO incluir em meses anteriores ao lançamento
-        if (bill.isPriorToLaunch && period !== 'todos') {
+        // Filtro de Período normal: compara bill.dueDate com o período selecionado
+        if (!this.isDateInPeriod(bill.dueDate, period, filters.customStart, filters.customEnd, targetYear, targetMonth)) {
           return false;
-        }
-
-        // Regra de despesa fixa: NÃO incluir daquele mês para frente se foi excluída/encerrada
-        if (bill.isExcludedFromMonth) {
-          return false;
-        }
-
-        // Se a despesa for fixa e o período for 'mes', ela SEMPRE pertence ao mês selecionado!
-        if (bill.expenseType === 'fixa' && period === 'mes') {
-          // Já está projetada para targetYear / targetMonth com seu vencimento no dia estipulado
-        } else {
-          // Filtro de Período normal
-          if (!this.isDateInPeriod(bill.dueDate, period, filters.customStart, filters.customEnd, targetYear, targetMonth)) {
-            return false;
-          }
         }
 
         // Filtro de Status
@@ -398,7 +313,6 @@
       let dueTodayTotal = 0;
 
       currentMonthEnriched.forEach((b) => {
-        if (b.isPriorToLaunch || b.isExcludedFromMonth) return;
         if (b.effectiveStatus === 'atrasado') {
           overdueCount++;
           overdueTotal += b.amount;
@@ -413,9 +327,6 @@
 
       // Métricas filtradas para o período selecionado
       const periodBills = enriched.filter((b) => {
-        if (b.isExcludedFromMonth) return false;
-        if (b.isPriorToLaunch && period !== 'todos') return false;
-        if (b.expenseType === 'fixa' && period === 'mes') return true;
         return this.isDateInPeriod(b.dueDate, period, null, null, curYear, curMonth);
       });
 
@@ -543,8 +454,7 @@
      */
     getCategoryBreakdown(bills) {
       const enriched = this.enrichBills(bills);
-      const active = enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth);
-      const totalOverall = active.reduce((sum, b) => sum + b.amount, 0);
+      const totalOverall = enriched.reduce((sum, b) => sum + b.amount, 0);
       const groups = {};
 
       // Inicializa com as categorias padrão
@@ -559,7 +469,7 @@
         };
       });
 
-      active.forEach((b) => {
+      enriched.forEach((b) => {
         const cat = groups[b.category] || groups.outros;
         cat.total += b.amount;
         cat.count += 1;
@@ -589,11 +499,10 @@
      */
     getUrgentBills(bills) {
       const today = this.getTodayNormalized();
-      const enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
+      const enriched = this.enrichBills(bills);
       const todayISO = window.AppConfig.utils.toISODateString(today);
 
       return enriched.filter((b) => {
-        if (b.isPriorToLaunch || b.isExcludedFromMonth) return false;
         if (b.effectiveStatus === 'atrasado') return true;
         if (b.dueDate === todayISO && b.effectiveStatus !== 'pago') return true;
         return false;
@@ -602,7 +511,6 @@
 
     /**
      * Retorna agrupamento mensal de contas (Cronograma Mensal de Vencimentos)
-     * Inclui todas as despesas fixas recorrentes em todos os meses
      * @param {Array<Object>} bills
      * @param {number|null} targetYear Ano de referência (padrão: ano vigente)
      * @returns {Array<Object>}
@@ -659,54 +567,50 @@
      */
     getMonthBills(bills, year, month) {
       const enriched = this.enrichBills(bills, { targetYear: year, targetMonth: month });
-      return enriched.filter((b) => {
-        if (b.isPriorToLaunch || b.isExcludedFromMonth) return false;
-        if (b.expenseType === 'fixa') return true;
-        return this.isDateInPeriod(b.dueDate, 'mes', null, null, year, month);
-      });
+      return enriched.filter((b) => this.isDateInPeriod(b.dueDate, 'mes', null, null, year, month));
     }
 
     /**
      * Retorna contas pendentes que vencem em até N dias úteis antes do vencimento
+     * Considera feriados cadastrados e prorrogação de finais de semana
      * @param {Array<Object>} bills
-     * @param {number} maxBusinessDays
+     * @param {number|null} maxBusinessDays Se nulo, utiliza a parametrização do sistema
      * @returns {Array<Object>}
      */
-    getBillsDueInBusinessDays(bills, maxBusinessDays = 2) {
+    getBillsDueInBusinessDays(bills, maxBusinessDays = null) {
+      const advanceDays = maxBusinessDays !== null && maxBusinessDays !== undefined
+        ? Number(maxBusinessDays)
+        : (window.AppConfig.HOLIDAY_PARAMS?.alertAdvanceBusinessDays || 2);
+
       const today = this.getTodayNormalized();
       const todayISO = window.AppConfig.utils.toISODateString(today);
-      let enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
-      const targetDate = window.AppConfig.utils.addBusinessDays(today, maxBusinessDays);
+      const enriched = this.enrichBills(bills);
+      const targetDate = window.AppConfig.utils.addBusinessDays(today, advanceDays);
       const targetISO = window.AppConfig.utils.toISODateString(targetDate);
-
-      // Se a janela de 2 dias úteis alcançar o mês seguinte (virada de mês), inclui também as projeções do mês seguinte
-      if (targetDate.getFullYear() !== today.getFullYear() || targetDate.getMonth() !== today.getMonth()) {
-        const nextMonthEnriched = this.enrichBills(bills, { targetYear: targetDate.getFullYear(), targetMonth: targetDate.getMonth() });
-        enriched = [...enriched, ...nextMonthEnriched];
-      }
 
       return enriched
         .filter((bill) => {
-          if (bill.isPriorToLaunch || bill.isExcludedFromMonth) return false;
           if (bill.effectiveStatus === 'pago') return false;
           if (!bill.dueDate) return false;
 
-          const effectiveDueDate = window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
-          const effectiveISO = window.AppConfig.utils.toISODateString(effectiveDueDate);
+          const effectiveDueDate = bill.effectiveDueDate || window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
+          const effectiveISO = bill.effectiveISO || window.AppConfig.utils.toISODateString(effectiveDueDate);
 
-          // Vencimento de hoje até a data limite de N dias úteis (considerando vencimento bancário efetivo)
-          return (bill.dueDate >= todayISO || effectiveISO >= todayISO) && effectiveISO <= targetISO;
+          // Vencimento de hoje até a data limite em dias úteis (considerando vencimento bancário efetivo)
+          return effectiveISO >= todayISO && effectiveISO <= targetISO;
         })
         .map((bill) => {
-          const effectiveDueDate = window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
-          const bDays = window.AppConfig.utils.getBusinessDaysDiff(todayISO, window.AppConfig.utils.toISODateString(effectiveDueDate));
+          const effectiveDueDate = bill.effectiveDueDate || window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
+          const effectiveISO = bill.effectiveISO || window.AppConfig.utils.toISODateString(effectiveDueDate);
+          const bDays = window.AppConfig.utils.getBusinessDaysDiff(todayISO, effectiveISO);
           return {
             ...bill,
             effectiveDueDate,
+            effectiveISO,
             businessDaysDiff: Math.max(0, bDays)
           };
         })
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        .sort((a, b) => new Date(a.effectiveDueDate || a.dueDate).getTime() - new Date(b.effectiveDueDate || b.dueDate).getTime());
     }
 
     /**
@@ -715,9 +619,8 @@
      * @returns {Array<Object>}
      */
     getOverdueBills(bills) {
-      const today = this.getTodayNormalized();
-      const enriched = this.enrichBills(bills, { targetYear: today.getFullYear(), targetMonth: today.getMonth() });
-      return enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth && b.effectiveStatus === 'atrasado');
+      const enriched = this.enrichBills(bills);
+      return enriched.filter((b) => b.effectiveStatus === 'atrasado');
     }
 
     /**
@@ -728,8 +631,7 @@
      */
     getTopBills(bills, limit = 5) {
       const enriched = this.enrichBills(bills);
-      const active = enriched.filter((b) => !b.isPriorToLaunch && !b.isExcludedFromMonth);
-      return [...active].sort((a, b) => b.amount - a.amount).slice(0, limit);
+      return [...enriched].sort((a, b) => b.amount - a.amount).slice(0, limit);
     }
   }
 
