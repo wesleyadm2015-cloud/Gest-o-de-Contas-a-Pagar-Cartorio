@@ -252,6 +252,7 @@
         this.annualChart.data.labels = labels;
         this.annualChart.data.datasets[0].data = totalExpenses;
         this.annualChart.data.datasets[1].data = totalPaid;
+        this.annualChart._fullLabels = fullLabels;
         this.annualChart.options.scales.x.ticks.color = theme.textColor;
         this.annualChart.options.scales.y.ticks.color = theme.textColor;
         this.annualChart.options.scales.y.grid.color = theme.gridColor;
@@ -323,25 +324,25 @@
               callbacks: {
                 title(items) {
                   const idx = items[0]?.dataIndex ?? 0;
-                  return fullLabels[idx] || items[0]?.label || '';
+                  return items[0]?.chart?._fullLabels?.[idx] || fullLabels[idx] || items[0]?.label || '';
                 },
                 label(context) {
-                  const idx = context.dataIndex;
                   const val = context.raw || 0;
                   const format = window.AppConfig.utils.formatBRL;
                   if (context.datasetIndex === 0) {
-                    return ` Despesas do Mês: ${format(val)} (${billCounts[idx]} contas)`;
+                    return ` Despesas do Mês: ${format(val)}`;
                   } else {
-                    const monthTotal = totalExpenses[idx] || 0;
-                    const pct = monthTotal > 0 ? ((val / monthTotal) * 100).toFixed(0) : 0;
-                    return ` Valores Pagos: ${format(val)} (${paidCounts[idx]} pagas • ${pct}%)`;
+                    return ` Valores Pagos: ${format(val)}`;
                   }
                 },
                 afterBody(items) {
                   const idx = items[0]?.dataIndex ?? 0;
-                  const pending = totalPending[idx] || 0;
+                  const chart = items[0]?.chart;
+                  const expenses = Number(chart?.data?.datasets[0]?.data[idx]) || 0;
+                  const paid = Number(chart?.data?.datasets[1]?.data[idx]) || 0;
+                  const pending = Math.max(0, expenses - paid);
                   const format = window.AppConfig.utils.formatBRL;
-                  return ` Saldo a Pagar: ${format(pending)}`;
+                  return `🔴 Saldo a Pagar: ${format(pending)}`;
                 }
               }
             }
@@ -379,6 +380,7 @@
           }
         }
       });
+      this.annualChart._fullLabels = fullLabels;
     }
 
     /**

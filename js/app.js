@@ -36,11 +36,11 @@
       try {
         this.loadSavedState();
         window.UIManager.init();
+        this.bindEvents();
         await window.StorageService.getCategories();
         await window.StorageService.getHolidayParams();
         await window.StorageService.getHolidays();
         window.UIManager.populateSelectOptions();
-        this.bindEvents();
         this.restoreUIState();
         await this.loadData(true);
       } catch (err) {
@@ -495,6 +495,15 @@
         this.applyFiltersAndRender();
       });
 
+      // Botão Extrair Relatório do Mês Selecionado (Barra Superior de Navegação de Mês)
+      document.getElementById('btn-extract-month-report-main')?.addEventListener('click', () => {
+        const year = Number(this.activeFilters.selectedYear !== undefined ? this.activeFilters.selectedYear : new Date().getFullYear());
+        const monthIndex = Number(this.activeFilters.selectedMonth !== undefined ? this.activeFilters.selectedMonth : new Date().getMonth());
+        const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[monthIndex]) || 'Mês';
+        const monthLabel = `${monthName} de ${year}`;
+        this.handleMonthPDF(year, monthIndex, monthLabel);
+      });
+
       // Datas Personalizadas
       document.getElementById('custom-date-start')?.addEventListener('change', (e) => {
         this.activeFilters.customStart = e.target.value;
@@ -743,6 +752,11 @@
       document.getElementById('btn-close-statement-modal')?.addEventListener('click', () => {
         window.UIManager.closeStatementModal();
       });
+      document.getElementById('statement-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'statement-modal') {
+          window.UIManager.closeStatementModal();
+        }
+      });
       document.getElementById('btn-print-statement')?.addEventListener('click', () => {
         window.print();
       });
@@ -763,7 +777,7 @@
         const stmtData = window.UIManager.currentStatementData;
         const billsToCopy = stmtData?.bills || this.allBills;
         const kpis = stmtData?.kpis || window.BillService.calculateKPIs(this.allBills, 'todos');
-        const text = window.ExportService.generateTextSummary(kpis, billsToCopy);
+        const text = window.ExportService.generateTextSummary(kpis, billsToCopy, stmtData?.options);
         const ok = await window.ExportService.copyToClipboard(text);
         if (ok) {
           window.UIManager.showToast('Demonstrativo copiado para a área de transferência!', 'success');
@@ -804,7 +818,27 @@
         this.handleMonthExcel(year, monthIndex, monthLabel);
       });
 
-      // 3. Seleção do Mês no Relatório: Atualiza a tabela com todas as despesas daquele mês (Somente Visualização)
+      // 3. Botão Extrair Relatório do Mês Atual (Cabeçalho do Gráfico Anual de 12 Meses)
+      document.getElementById('btn-extract-active-month-report')?.addEventListener('click', () => {
+        const now = new Date();
+        const year = Number(this.activeFilters?.selectedYear !== undefined ? this.activeFilters.selectedYear : now.getFullYear());
+        const monthIndex = Number(this.activeFilters?.selectedMonth !== undefined ? this.activeFilters.selectedMonth : now.getMonth());
+        const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[monthIndex]) || 'Mês';
+        const monthLabel = `${monthName} de ${year}`;
+        this.handleMonthPDF(year, monthIndex, monthLabel);
+      });
+
+      // 4. Delegação de Clique na Tabela Resumo Consolidada dos 12 Meses: Botão "Extrair Relatório" de cada Mês
+      document.getElementById('annual-summary-table-body')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-extract-month-statement');
+        if (!btn) return;
+        const year = parseInt(btn.dataset.year, 10);
+        const monthIndex = parseInt(btn.dataset.month, 10);
+        const monthLabel = btn.dataset.monthLabel || `${(window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[monthIndex]) || 'Mês'} de ${year}`;
+        this.handleMonthPDF(year, monthIndex, monthLabel);
+      });
+
+      // 5. Seleção do Mês no Relatório: Atualiza a tabela com todas as despesas daquele mês (Somente Visualização)
       document.getElementById('select-report-month')?.addEventListener('change', () => {
         this.updateReportSelectedMonthView();
       });
@@ -818,6 +852,11 @@
       // Fechamento de Modais
       document.getElementById('btn-close-modal')?.addEventListener('click', () => window.UIManager.closeBillModal());
       document.getElementById('btn-cancel-modal')?.addEventListener('click', () => window.UIManager.closeBillModal());
+      document.getElementById('bill-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'bill-modal') {
+          window.UIManager.closeBillModal();
+        }
+      });
 
       // Sincronização entre Status e Data de Pagamento no formulário
       document.getElementById('bill-status')?.addEventListener('change', (e) => {
@@ -848,6 +887,11 @@
       document.getElementById('btn-cancel-delete')?.addEventListener('click', () => window.UIManager.closeDeleteModal());
       document.getElementById('btn-confirm-delete')?.addEventListener('click', async () => {
         await this.handleDeleteConfirm();
+      });
+      document.getElementById('delete-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'delete-modal') {
+          window.UIManager.closeDeleteModal();
+        }
       });
 
       // =========================================================================
@@ -899,12 +943,6 @@
       // =========================================================================
       // EVENTOS DO MODAL: LEMBRETE DIÁRIO DE VENCIMENTOS (2 DIAS ÚTEIS)
       // =========================================================================
-      const openDailyAlertHelper = () => {
-        const upcoming = window.BillService.getBillsDueInBusinessDays(this.allBills, 2);
-        const overdue = window.BillService.getOverdueBills(this.allBills);
-        window.UIManager.openDailyAlertModal(upcoming, overdue);
-      };
-
       document.getElementById('btn-close-daily-alert')?.addEventListener('click', () => {
         window.UIManager.closeDailyAlertModal();
       });
@@ -936,14 +974,14 @@
         const targetISO = window.AppConfig.utils.toISODateString(targetDate);
 
         this.activeFilters.period = 'personalizado';
-        this.activeFilters.customStart = todayISO;
+        this.activeFilters.customStart = targetISO;
         this.activeFilters.customEnd = targetISO;
         this.activeFilters.status = 'pendente';
 
         const customDateInputs = document.getElementById('custom-date-container');
         if (customDateInputs) customDateInputs.classList.remove('hidden');
         const startInput = document.getElementById('custom-date-start');
-        if (startInput) startInput.value = todayISO;
+        if (startInput) startInput.value = targetISO;
         const endInput = document.getElementById('custom-date-end');
         if (endInput) endInput.value = targetISO;
 
@@ -956,7 +994,7 @@
 
         this.applyFiltersAndRender();
         document.getElementById('bills-table-section')?.scrollIntoView({ behavior: 'smooth' });
-        window.UIManager.showToast('Exibindo contas que vencem nos próximos 2 dias úteis.', 'info');
+        window.UIManager.showToast('Exibindo contas com vencimento em 2 dias úteis.', 'info');
       });
 
       // Botão Mostrar Atrasadas a partir do Modal
@@ -1425,11 +1463,6 @@
         }
       });
 
-      // Botão de Limpar Filtros no Empty State
-      document.getElementById('btn-clear-all-filters')?.addEventListener('click', () => {
-        this.resetFilters();
-      });
-
       // =========================================================================
       // EVENTOS: 1. CADASTRO DE USUÁRIOS
       // =========================================================================
@@ -1527,9 +1560,40 @@
       // Fechar modais com a tecla Escape
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+          // Modais secundários / de topo primeiro
+          const recModal = document.getElementById('recurring-bill-modal');
+          if (recModal && !recModal.classList.contains('hidden')) {
+            window.UIManager.closeRecurringForm();
+            return;
+          }
           const editModal = document.getElementById('edit-user-modal');
           if (editModal && !editModal.classList.contains('hidden')) {
             window.UIManager.closeEditUserModal();
+            return;
+          }
+          const qnfModal = document.getElementById('quick-nf-modal');
+          if (qnfModal && !qnfModal.classList.contains('hidden')) {
+            window.UIManager.closeQuickNFModal();
+            return;
+          }
+          const delModal = document.getElementById('delete-modal');
+          if (delModal && !delModal.classList.contains('hidden')) {
+            window.UIManager.closeDeleteModal();
+            return;
+          }
+          const billModal = document.getElementById('bill-modal');
+          if (billModal && !billModal.classList.contains('hidden')) {
+            window.UIManager.closeBillModal();
+            return;
+          }
+          const stmtModal = document.getElementById('statement-modal');
+          if (stmtModal && !stmtModal.classList.contains('hidden')) {
+            window.UIManager.closeStatementModal();
+            return;
+          }
+          const alertModal = document.getElementById('daily-alert-modal');
+          if (alertModal && !alertModal.classList.contains('hidden')) {
+            window.UIManager.closeDailyAlertModal();
             return;
           }
           const expModal = document.getElementById('expense-manager-modal');
@@ -1863,22 +1927,20 @@
         window.UIManager.resetCategoryForm();
       });
 
-      // Botão de Nova Categoria na barra de ações
+      // Botão de Nova Categoria na barra de ações (Foca e prepara o formulário)
       document.getElementById('btn-focus-new-cat')?.addEventListener('click', () => {
         window.UIManager.resetCategoryForm();
-        document.getElementById('cat-name')?.focus();
-      });
-
-      // Restaurar Categorias Padrão
-      document.getElementById('btn-reset-categories-default')?.addEventListener('click', async () => {
-        if (confirm('Deseja restaurar as categorias padrão do sistema cartorário? Categorias customizadas serão redefinidas para os padrões institucionais.')) {
-          const defaults = await window.StorageService.resetDefaultCategories();
-          window.UIManager.resetCategoryForm();
-          window.UIManager.populateSelectOptions();
-          window.UIManager.renderExpenseCategories(defaults, this.allBills);
-          await this.updateAdminSidebarBadges();
-          await this.loadData();
-          window.UIManager.showToast('Categorias padrão restauradas com sucesso!', 'success');
+        const catCard = document.getElementById('category-form-card') || document.getElementById('category-form');
+        if (catCard) {
+          catCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        const nameInput = document.getElementById('cat-name');
+        if (nameInput) {
+          setTimeout(() => {
+            nameInput.focus();
+            nameInput.classList.add('ring-2', 'ring-emerald-500');
+            setTimeout(() => nameInput.classList.remove('ring-2', 'ring-emerald-500'), 1200);
+          }, 60);
         }
       });
 
@@ -1892,8 +1954,8 @@
 
         const existingId = idInput?.value ? idInput.value.trim() : '';
         const label = nameInput.value.trim();
-        const icon = iconInput.value;
-        const color = colorInput.value;
+        const icon = (iconInput && iconInput.value) || 'tag';
+        const color = (colorInput && colorInput.value) || '#059669';
 
         if (!label) {
           window.UIManager.showToast('Informe o nome da categoria.', 'warning');
@@ -1916,6 +1978,13 @@
 
       // Ações na Lista de Categorias (Editar e Excluir)
       const handleCategoryAction = async (e) => {
+        // Atalho para focar nova categoria a partir da tabela vazia
+        const focusBtn = e.target.closest('.btn-focus-new-cat');
+        if (focusBtn) {
+          document.getElementById('btn-focus-new-cat')?.click();
+          return;
+        }
+
         // Editar Categoria
         const editBtn = e.target.closest('.btn-edit-category');
         if (editBtn) {
@@ -1931,7 +2000,7 @@
           return;
         }
 
-        // Excluir Categoria
+        // Excluir Categoria (Qualquer categoria, inclusive Outros)
         const deleteBtn = e.target.closest('.btn-delete-category');
         if (deleteBtn) {
           const catId = deleteBtn.dataset.catId;
@@ -1939,7 +2008,7 @@
           const billsCount = parseInt(deleteBtn.dataset.billsCount, 10) || 0;
 
           const confirmMsg = billsCount > 0
-            ? `Deseja realmente excluir a categoria "${catLabel}"?\n\nExistem ${billsCount} conta(s) vinculada(s) a ela. Ao confirmar, essas contas serão reclassificadas automaticamente para "Outras Despesas".`
+            ? `Deseja realmente excluir a categoria "${catLabel}"?\n\nExistem ${billsCount} conta(s) vinculada(s) a ela.`
             : `Deseja realmente excluir a categoria "${catLabel}"?`;
 
           if (confirm(confirmMsg)) {
@@ -1966,17 +2035,28 @@
       // =========================================================================
       // GESTÃO DE DESPESAS RECORRENTES (REPOSITÓRIO PERMANENTE)
       // =========================================================================
-      // Botão para abrir formulário de inclusão de despesa recorrente
+      // Botão para abrir tela dedicada de inclusão de despesa fixa
       document.getElementById('btn-open-recurring-form')?.addEventListener('click', () => {
         window.UIManager.openRecurringForm();
       });
 
+      // Fechar tela dedicada de despesa fixa (X, Cancelar/Voltar e Backdrop)
+      document.getElementById('btn-close-recurring-modal')?.addEventListener('click', () => {
+        window.UIManager.closeRecurringForm();
+      });
+      document.getElementById('btn-cancel-recurring-modal')?.addEventListener('click', () => {
+        window.UIManager.closeRecurringForm();
+      });
       document.getElementById('btn-close-recurring-form')?.addEventListener('click', () => {
         window.UIManager.closeRecurringForm();
       });
-
       document.getElementById('btn-cancel-recurring-form')?.addEventListener('click', () => {
         window.UIManager.closeRecurringForm();
+      });
+      document.getElementById('recurring-bill-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'recurring-bill-modal') {
+          window.UIManager.closeRecurringForm();
+        }
       });
 
       // Submissão do formulário de Despesa Recorrente
@@ -1992,7 +2072,7 @@
         const notes = document.getElementById('recurring-notes').value.trim();
 
         if (!description) {
-          window.UIManager.showToast('Informe a descrição da despesa recorrente.', 'warning');
+          window.UIManager.showToast('Informe a descrição da despesa fixa.', 'warning');
           return;
         }
 
@@ -2013,7 +2093,7 @@
         });
 
         window.UIManager.showToast(
-          id ? `Despesa "${description}" atualizada no repositório!` : `Despesa "${description}" salva com sucesso no repositório!`,
+          id ? `Despesa fixa "${description}" atualizada no repositório!` : `Despesa fixa "${description}" salva com sucesso no repositório!`,
           'success'
         );
 
@@ -2076,20 +2156,126 @@
         }
       });
 
-      // Botão Lançar Todas no Mês Atual
+      // =========================================================================
+      // SELEÇÃO EM MASSA DE DESPESAS FIXAS RECORRENTES
+      // =========================================================================
+      const updateRecurringSelectionUI = () => {
+        const checkboxes = Array.from(document.querySelectorAll('.check-single-recurring'));
+        const headerCheck = document.getElementById('check-all-recurring-header');
+        const selectBtnText = document.getElementById('btn-select-all-recurring-text');
+        const launchBtnText = document.getElementById('btn-launch-all-recurring-text');
+
+        const total = checkboxes.length;
+        const checkedCount = checkboxes.filter((cb) => cb.checked).length;
+
+        checkboxes.forEach((cb) => {
+          const row = cb.closest('tr');
+          if (row) {
+            if (cb.checked) {
+              row.classList.add('bg-emerald-50/70', 'dark:bg-emerald-950/40');
+            } else {
+              row.classList.remove('bg-emerald-50/70', 'dark:bg-emerald-950/40');
+            }
+          }
+        });
+
+        if (headerCheck) {
+          if (total === 0) {
+            headerCheck.checked = false;
+            headerCheck.indeterminate = false;
+          } else if (checkedCount === total) {
+            headerCheck.checked = true;
+            headerCheck.indeterminate = false;
+          } else if (checkedCount > 0) {
+            headerCheck.checked = false;
+            headerCheck.indeterminate = true;
+          } else {
+            headerCheck.checked = false;
+            headerCheck.indeterminate = false;
+          }
+        }
+
+        if (selectBtnText) {
+          if (total > 0 && checkedCount === total) {
+            selectBtnText.textContent = 'Desmarcar Todas';
+          } else {
+            selectBtnText.textContent = 'Selecionar Todas';
+          }
+        }
+
+        if (launchBtnText) {
+          if (checkedCount > 0 && checkedCount < total) {
+            launchBtnText.textContent = `Lançar Selecionadas (${checkedCount})`;
+          } else {
+            launchBtnText.textContent = 'Lançar no Mês Atual';
+          }
+        }
+      };
+
+      // Botão Selecionar Todas / Desmarcar Todas
+      document.getElementById('btn-select-all-recurring')?.addEventListener('click', () => {
+        const checkboxes = Array.from(document.querySelectorAll('.check-single-recurring'));
+        if (checkboxes.length === 0) {
+          window.UIManager.showToast('Nenhuma despesa fixa cadastrada no repositório.', 'info');
+          return;
+        }
+
+        const allChecked = checkboxes.length > 0 && checkboxes.every((cb) => cb.checked);
+        const shouldCheck = !allChecked;
+        checkboxes.forEach((cb) => {
+          cb.checked = shouldCheck;
+        });
+
+        updateRecurringSelectionUI();
+        if (shouldCheck) {
+          window.UIManager.showToast(`Todas as ${checkboxes.length} despesas fixas selecionadas!`, 'info', 2000);
+        } else {
+          window.UIManager.showToast('Todas as seleções foram desmarcadas.', 'info', 2000);
+        }
+      });
+
+      // Checkbox Mestre do Cabeçalho da Tabela
+      document.getElementById('check-all-recurring-header')?.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        const checkboxes = Array.from(document.querySelectorAll('.check-single-recurring'));
+        checkboxes.forEach((cb) => {
+          cb.checked = checked;
+        });
+        updateRecurringSelectionUI();
+      });
+
+      // Mudança em cada Checkbox individual da Tabela
+      document.getElementById('fixed-bills-table-body')?.addEventListener('change', (e) => {
+        if (e.target && e.target.classList.contains('check-single-recurring')) {
+          updateRecurringSelectionUI();
+        }
+      });
+
+      // Botão Lançar Todas no Mês Atual (ou Apenas as Selecionadas)
       document.getElementById('btn-launch-all-recurring')?.addEventListener('click', async () => {
+        const selectedCheckboxes = Array.from(document.querySelectorAll('.check-single-recurring:checked'));
+        const selectedIds = selectedCheckboxes.map((cb) => cb.dataset.recurringId).filter(Boolean);
+
         const year = this.activeFilters.selectedYear !== undefined ? Number(this.activeFilters.selectedYear) : new Date().getFullYear();
         const month = this.activeFilters.selectedMonth !== undefined ? Number(this.activeFilters.selectedMonth) : new Date().getMonth();
         const monthName = (window.AppConfig.MONTH_NAMES && window.AppConfig.MONTH_NAMES[month]) || 'Mês';
 
-        const result = await window.StorageService.launchAllRecurringToMonth(year, month);
-        if (result.created.length > 0) {
-          window.UIManager.showToast(`${result.created.length} despesa(s) recorrente(s) lançada(s) em ${monthName}/${year}!`, 'success');
-          await this.loadData();
-        } else if (result.skipped.length > 0) {
-          window.UIManager.showToast(`As despesas recorrentes do repositório já constam lançadas em ${monthName}/${year}.`, 'info');
+        let result;
+        if (selectedIds.length > 0) {
+          result = await window.StorageService.launchSelectedRecurringToMonth(selectedIds, year, month);
         } else {
-          window.UIManager.showToast('Nenhuma despesa recorrente cadastrada no repositório.', 'warning');
+          result = await window.StorageService.launchAllRecurringToMonth(year, month);
+        }
+
+        if (result.created.length > 0) {
+          window.UIManager.showToast(`${result.created.length} despesa(s) fixa(s) lançada(s) em ${monthName}/${year}!`, 'success');
+          await this.loadData();
+          const updatedRecurring = await window.StorageService.getRecurringBills();
+          window.UIManager.renderExpenseFixedBills(updatedRecurring);
+        } else if (result.skipped.length > 0) {
+          window.UIManager.showToast(`As despesas fixas selecionadas já constam lançadas em ${monthName}/${year}.`, 'info');
+        } else {
+          window.UIManager.showToast('Nenhuma despesa fixa cadastrada no repositório.', 'warning');
         }
       });
 
@@ -2125,7 +2311,7 @@
         amount = parseFloat(clean);
       }
       const dueDate = document.getElementById('bill-due-date').value;
-      const category = document.getElementById('bill-category')?.value || 'outros';
+      const category = document.getElementById('bill-category')?.value || (Object.keys(window.AppConfig.CATEGORIES || {})[0] || 'geral');
       const paymentMethod = document.getElementById('bill-payment-method')?.value || 'pix';
       const invoiceNumber = document.getElementById('bill-invoice-number')?.value.trim() || '';
       const documentNumber = document.getElementById('bill-document-number')?.value.trim() || '';
@@ -2633,8 +2819,12 @@
 
   window.App = new AppController();
 
-  // Inicialização quando o DOM estiver pronto
-  document.addEventListener('DOMContentLoaded', () => {
+  // Inicialização quando o DOM estiver pronto (com fallback seguro caso já esteja carregado)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.App.init();
+    });
+  } else {
     window.App.init();
-  });
+  }
 })(window);

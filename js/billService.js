@@ -72,7 +72,9 @@
 
         const effectiveStatus = this.computeStatus({ dueDate, status, paymentDate });
         const relativeDate = window.AppConfig.utils.getRelativeDateInfo(dueDate, effectiveStatus);
-        const categoryMeta = window.AppConfig.CATEGORIES[category] || window.AppConfig.CATEGORIES.outros;
+        const categoryMeta = (window.AppConfig.CATEGORIES && window.AppConfig.CATEGORIES[category])
+          || (window.AppConfig.CATEGORIES && Object.values(window.AppConfig.CATEGORIES)[0])
+          || { id: category || 'geral', label: category || 'Geral', icon: 'tag', color: '#059669', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
         const paymentMeta = window.AppConfig.PAYMENT_METHODS[paymentMethod] || window.AppConfig.PAYMENT_METHODS.pix;
         const statusMeta = window.AppConfig.STATUSES[effectiveStatus] || window.AppConfig.STATUSES.pendente;
         const invoiceStatus = (invoiceNumber || documentNumber) ? 'recebida' : (b.invoiceStatus || 'aguardando');
@@ -470,13 +472,19 @@
       });
 
       enriched.forEach((b) => {
-        const cat = groups[b.category] || groups.outros;
-        cat.total += b.amount;
-        cat.count += 1;
-        if (b.effectiveStatus === 'pago') {
-          cat.paidTotal += b.amount;
-        } else {
-          cat.pendingTotal += b.amount;
+        let cat = groups[b.category];
+        if (!cat) {
+          const firstKey = Object.keys(groups)[0];
+          cat = firstKey ? groups[firstKey] : null;
+        }
+        if (cat) {
+          cat.total += b.amount;
+          cat.count += 1;
+          if (b.effectiveStatus === 'pago') {
+            cat.paidTotal += b.amount;
+          } else {
+            cat.pendingTotal += b.amount;
+          }
         }
       });
 
@@ -571,7 +579,7 @@
     }
 
     /**
-     * Retorna contas pendentes que vencem em até N dias úteis antes do vencimento
+     * Retorna contas pendentes que vencem em exatamente N dias úteis de antecedência (ex: 2 dias úteis)
      * Considera feriados cadastrados e prorrogação de finais de semana
      * @param {Array<Object>} bills
      * @param {number|null} maxBusinessDays Se nulo, utiliza a parametrização do sistema
@@ -596,8 +604,8 @@
           const effectiveDueDate = bill.effectiveDueDate || window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);
           const effectiveISO = bill.effectiveISO || window.AppConfig.utils.toISODateString(effectiveDueDate);
 
-          // Vencimento de hoje até a data limite em dias úteis (considerando vencimento bancário efetivo)
-          return effectiveISO >= todayISO && effectiveISO <= targetISO;
+          // Apenas contas com vencimento em exatamente N dias úteis (2 dias úteis)
+          return effectiveISO === targetISO;
         })
         .map((bill) => {
           const effectiveDueDate = bill.effectiveDueDate || window.AppConfig.utils.getEffectiveBusinessDueDate(bill.dueDate);

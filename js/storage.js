@@ -120,6 +120,30 @@
             }
             return b;
           });
+
+          // Deduplicação automática de contas idênticas no mesmo vencimento (ex: Siscart duplicada)
+          const seenBills = new Map();
+          const deduplicated = [];
+          for (const b of bills) {
+            const key = `${(b.description || '').trim().toLowerCase()}_${b.dueDate}_${Number(b.amount).toFixed(2)}`;
+            if (!seenBills.has(key)) {
+              seenBills.set(key, b);
+              deduplicated.push(b);
+            } else {
+              const prev = seenBills.get(key);
+              if (b.status === 'pago' && prev.status !== 'pago') {
+                const idx = deduplicated.indexOf(prev);
+                if (idx !== -1) deduplicated[idx] = b;
+                seenBills.set(key, b);
+              }
+              migrated = true;
+            }
+          }
+          if (deduplicated.length !== bills.length) {
+            bills = deduplicated;
+            migrated = true;
+          }
+
           if (migrated) {
             localStorage.setItem(this.storageKey, JSON.stringify(bills));
           }
@@ -608,9 +632,9 @@
       return new Promise((resolve) => {
         try {
           const raw = localStorage.getItem(this.categoriesKey);
-          if (raw) {
+          if (raw !== null) {
             const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            if (parsed && typeof parsed === 'object') {
               window.AppConfig.CATEGORIES = parsed;
               return resolve(parsed);
             }
@@ -619,7 +643,7 @@
           localStorage.setItem(this.categoriesKey, JSON.stringify(window.AppConfig.CATEGORIES));
           resolve(window.AppConfig.CATEGORIES);
         } catch {
-          resolve(window.AppConfig.CATEGORIES);
+          resolve(window.AppConfig.CATEGORIES || {});
         }
       });
     }
@@ -669,16 +693,12 @@
     }
 
     /**
-     * Remove uma categoria de despesa e reatribui contas existentes para "Outros"
+     * Remove uma categoria de despesa (inclusive 'outros') e reatribui contas existentes para a primeira restante
      * @param {string} catId
      * @returns {Promise<boolean>}
      */
     async deleteCategory(catId) {
       try {
-        if (catId === 'outros') {
-          throw new Error('A categoria "Outros" é padrão do sistema e não pode ser removida.');
-        }
-
         const categories = await this.getCategories();
         if (!categories[catId]) {
           return false;
@@ -688,12 +708,15 @@
         window.AppConfig.CATEGORIES = categories;
         localStorage.setItem(this.categoriesKey, JSON.stringify(categories));
 
-        // Reatribui contas vinculadas a essa categoria para 'outros'
+        const remainingKeys = Object.keys(categories);
+        const fallbackCat = remainingKeys.length > 0 ? remainingKeys[0] : 'geral';
+
+        // Reatribui contas vinculadas a essa categoria
         const bills = this._getStoredBills();
         let billsChanged = false;
         bills.forEach((b) => {
           if (b.category === catId) {
-            b.category = 'outros';
+            b.category = fallbackCat;
             billsChanged = true;
           }
         });
@@ -701,7 +724,7 @@
           localStorage.setItem(this.storageKey, JSON.stringify(bills));
         }
 
-        // Reatribui despesas recorrentes vinculadas a essa categoria para 'outros'
+        // Reatribui despesas recorrentes vinculadas a essa categoria
         try {
           const rawRec = localStorage.getItem(this.recurringKey);
           if (rawRec) {
@@ -709,7 +732,7 @@
             let recsChanged = false;
             recs.forEach((r) => {
               if (r.category === catId) {
-                r.category = 'outros';
+                r.category = fallbackCat;
                 recsChanged = true;
               }
             });
@@ -965,6 +988,57 @@
       });
 
       return newBill;
+    }
+
+    /**
+     * Lança as despesas recorrentes selecionadas do repositório no mês especificado (sem duplicar já existentes)
+     * @param {Array<string>} selectedIds
+     * @param {number} year
+     * @param {number} monthIndex (0 a 11)
+     * @returns {Promise<{ created: Array<Object>, skipped: Array<Object> }>}
+     */
+    async launchSelectedRecurringToMonth(selectedIds, year, monthIndex) {
+      const items = await this.getRecurringBills();
+      const targetItems = Array.isArray(selectedIds) && selectedIds.length > 0
+        ? items.filter((i) => selectedIds.includes(i.id))
+        : items;
+      const stored = this._getStoredBills();
+      const pad = (n) => String(n).padStart(2, '0');
+      const monthPrefix = `${year}-${pad(monthIndex + 1)}`;
+      const currentMonthBills = stored.filter((b) => b.dueDate && b.dueDate.startsWith(monthPrefix));
+
+      const created = [];
+      const skipped = [];
+
+      for (const rec of targetItems) {
+        const exists = currentMonthBills.some((b) => 
+          b.description.trim().toLowerCase() === rec.description.trim().toLowerCase()
+        );
+
+        if (exists) {
+          skipped.push(rec);
+        } else {
+          const maxDaysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+          const actualDay = Math.min(rec.dueDay, maxDaysInMonth);
+          const dueDate = `${year}-${pad(monthIndex + 1)}-${pad(actualDay)}`;
+
+          const b = await this.create({
+            description: rec.description,
+            amount: rec.amount,
+            dueDate: dueDate,
+            dueDay: actualDay,
+            location: rec.location,
+            category: rec.category,
+            paymentMethod: rec.paymentMethod,
+            expenseType: 'fixa',
+            status: 'pendente',
+            notes: rec.notes
+          });
+          created.push(b);
+        }
+      }
+
+      return { created, skipped };
     }
 
     /**

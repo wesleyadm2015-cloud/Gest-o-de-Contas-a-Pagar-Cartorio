@@ -81,57 +81,95 @@
     }
 
     /**
+     * Alias de exportação de contas para CSV
+     */
+    exportBillsToCSV(bills, filename = null) {
+      return this.exportToCSV(bills, filename);
+    }
+
+    /**
+     * Alias para geração de resumo de texto formatado
+     */
+    generateTextSummary(kpis, bills, options = {}) {
+      return this.generateFormattedSummary(bills, kpis, options);
+    }
+
+    /**
+     * Copia texto genérico para o clipboard
+     */
+    async copyToClipboard(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } else {
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          const successful = document.execCommand('copy');
+          document.body.removeChild(textArea);
+          return successful;
+        }
+      } catch (err) {
+        console.error('Falha ao copiar para clipboard:', err);
+        return false;
+      }
+    }
+
+    /**
      * Gera um resumo em texto puro formatado para colar em WhatsApp, E-mail ou Bloco de Notas
+     * Traz todas as despesas detalhadas um a um e o resumo no final com os saldos das despesas.
      * @param {Array<Object>} bills
      * @param {Object} kpis
+     * @param {Object} options
      * @returns {string}
      */
-    generateFormattedSummary(bills, kpis) {
+    generateFormattedSummary(bills, kpis, options = {}) {
       const today = window.AppConfig.utils.toISODateString();
       const dateFormatted = window.AppConfig.utils.formatDate(today);
+      const monthTitle = options.monthLabel ? ` - ${options.monthLabel.toUpperCase()}` : '';
 
-      let text = `📊 RELATÓRIO DE CONTAS - CONTA DIÁRIA\n`;
+      let text = `==================================================\n`;
+      text += `🏛️ 2º OFICIAL DE REGISTRO DE IMÓVEIS, RTD E RCPJ DE SJC\n`;
+      text += `📄 RELATÓRIO DE DESPESAS PARA PAGAR${monthTitle}\n`;
       text += `📅 Data de Emissão: ${dateFormatted}\n`;
-      text += `--------------------------------------------------\n\n`;
+      text += `==================================================\n\n`;
 
-      text += `💰 RESUMO FINANCEIRO GERAL:\n`;
-      text += `• Total Comprometido: ${window.AppConfig.utils.formatBRL(kpis.totalAmount)} (${kpis.totalBillsCount} contas)\n`;
-      text += `• Total Pago: ${window.AppConfig.utils.formatBRL(kpis.totalPaid)} (${kpis.paidPercentage}% quitado)\n`;
-      text += `• Total a Pagar: ${window.AppConfig.utils.formatBRL(kpis.totalPending)} (${kpis.pendingCount} pendentes)\n\n`;
+      // 1. Despesas Detalhadas Item a Item (Todas as despesas do mês, sejam pagas ou não)
+      text += `📋 DESPESAS DETALHADAS (ITEM A ITEM - ${bills.length} CONTAS):\n`;
+      if (!bills || bills.length === 0) {
+        text += `• Nenhuma despesa registrada para este período.\n`;
+      } else {
+        bills.forEach((b, idx) => {
+          let tag = '[⏳ A PAGAR]';
+          if (b.effectiveStatus === 'pago') tag = '[✅ PAGO]';
+          else if (b.effectiveStatus === 'atrasado') tag = '[🚨 ATRASADO]';
 
-      text += `🚨 STATUS DE ATENÇÃO:\n`;
-      text += `• Contas Atrasadas / Vencidas: ${kpis.overdueCount} (${window.AppConfig.utils.formatBRL(kpis.overdueTotal)})\n`;
-      text += `• Contas Vencendo Hoje: ${kpis.dueTodayPendingCount} pendentes (${window.AppConfig.utils.formatBRL(kpis.dueTodayTotal)})\n\n`;
+          const num = String(idx + 1).padStart(2, '0');
+          const loc = b.location === 'CG' ? 'LD' : (b.location || 'LD');
+          const tipo = b.expenseType === 'variavel' ? 'V' : 'F';
+          const cat = (b.categoryMeta && b.categoryMeta.label) || b.category || 'Outros';
+          const val = window.AppConfig.utils.formatBRL(b.amount);
+          const venc = window.AppConfig.utils.formatDate(b.dueDate);
+          const pag = b.effectiveStatus === 'pago' && b.paymentDate
+            ? ` | Pago em: ${window.AppConfig.utils.formatDate(b.paymentDate)}`
+            : ' | Pagamento: Pendente';
+          const doc = (b.invoiceNumber || b.documentNumber)
+            ? ` | NF/Doc: ${b.invoiceNumber || b.documentNumber}`
+            : '';
 
-      // Categorias
-      const categories = window.BillService.getCategoryBreakdown(bills);
-      if (categories.length > 0) {
-        text += `📂 DESPESAS POR CATEGORIA:\n`;
-        categories.forEach((c) => {
-          text += `• ${c.meta.label}: ${window.AppConfig.utils.formatBRL(c.total)} (${c.percentage}% | ${c.count} contas)\n`;
+          text += `${num}. ${tag} ${val} | ${b.description} [${loc} - ${tipo}] | Venc: ${venc}${pag} | Cat: ${cat}${doc}\n`;
         });
-        text += `\n`;
       }
 
-      // Contas Detalhadas
-      text += `📋 LISTAGEM DAS CONTAS:\n`;
-      bills.forEach((b) => {
-        let tag = '[⏳ PENDENTE]';
-        if (b.effectiveStatus === 'pago') tag = '[✅ PAGO]';
-        else if (b.effectiveStatus === 'atrasado') tag = '[🚨 ATRASADO]';
-
-        const cat = (b.categoryMeta && b.categoryMeta.label) || '';
-        const pay = (b.paymentMeta && b.paymentMeta.label) || '';
-        const tipo = b.expenseType === 'variavel' ? 'Variável' : 'Fixa';
-        const val = window.AppConfig.utils.formatBRL(b.amount);
-        const venc = window.AppConfig.utils.formatDate(b.dueDate);
-        const pag = b.effectiveStatus === 'pago' && b.paymentDate ? ` | Pago em: ${window.AppConfig.utils.formatDate(b.paymentDate)}` : ' | Pagamento: Pendente';
-
-        text += `${tag} ${val} - ${b.description} [${tipo}] | Venc: ${venc}${pag} | Cat: ${cat} | Meio: ${pay}\n`;
-      });
-
-      text += `\n--------------------------------------------------\n`;
-      text += `Gerado automaticamente via ContaDiária App.`;
+      text += `\n==================================================\n`;
+      text += `Total de Lançamentos: ${bills.length} conta(s)\n`;
+      text += `Relatório emitido pelo Sistema de Gestão Financeira.`;
 
       return text;
     }
